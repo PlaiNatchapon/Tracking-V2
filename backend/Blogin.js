@@ -52,6 +52,7 @@ module.exports = function (pool) {
         message: "เข้าสู่ระบบสำเร็จ",
         token: newToken,
         department: user.department,
+        userId: user.id,
       });
     } catch (err) {
       console.error(err);
@@ -86,5 +87,31 @@ module.exports = function (pool) {
     }
   });
 
+
+
+  // API สำหรับดึงข้อมูลชื่อ-นามสกุล และแผนก จาก user_id
+router.get('/user-profile/:id', async (req, res) => {
+    try {
+        const userId = req.params.id;
+        
+        // *หมายเหตุ: ปรับชื่อตารางและคอลัมน์ให้ตรงกับฐานข้อมูลจริงของคุณ (เช่น users, first_name, last_name, department)
+        const query = `
+            SELECT fullname, department 
+            FROM users 
+            WHERE id = $1;
+        `;
+        
+        const result = await pool.query(query, [userId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "ไม่พบข้อมูลผู้ใช้งาน" });
+        }
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error("Error fetching user profile:", err.message);
+        res.status(500).send('Server Error');
+    }
+});
   return router;
 };

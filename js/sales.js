@@ -306,3 +306,34 @@ function handleLogout() {
     window.history.replaceState(null, null, "login.html");
   }
 }
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const userId =
+    localStorage.getItem("user_id") || localStorage.getItem("userId");
+
+  if (!userId) {
+    console.warn("ไม่พบรหัสผู้ใช้ (user_id) กรุณาล็อกอินใหม่");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://192.168.1.35:3000/api/user-profile/${userId}`,
+    );
+    if (!response.ok) throw new Error("ไม่สามารถดึงข้อมูลผู้ใช้ได้");
+
+    const userData = await response.json();
+
+    // 🟢 ดึงฟิลด์ fullname ตามฐานข้อมูลจริงของคุณ
+    const fullName = userData.fullname || "ผู้ใช้งานระบบ";
+    const department = userData.department || "-";
+
+    const nameInput = document.getElementById("employeeName");
+    if (nameInput) nameInput.value = fullName;
+
+    const deptInput = document.getElementById("departmentName");
+    if (deptInput) deptInput.value = department;
+  } catch (err) {
+    console.error("Error loading user info from DB:", err);
+  }
+});
