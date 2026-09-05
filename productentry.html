@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin System - Product Entry</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Kanit:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/productentry.css" />
+  </head>
+  <body>
+    <div class="sheet">
+      <header class="letterhead">
+        <div class="mark">
+          <div class="mark-icon">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+              ></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.5" x2="12" y2="12"></line>
+            </svg>
+          </div>
+          <div class="mark-text">
+            <div class="eyebrow">ADMIN SYSTEM v2.4</div>
+            <div class="doc-date" id="current-date">DATE: --/--/----</div>
+          </div>
+        </div>
+        <button class="btn-logout" type="button">ออกจากระบบ</button>
+      </header>
+
+      <main class="container">
+        <h2>เพิ่มสินค้าใหม่เข้าคลัง</h2>
+
+        <form id="admin-form" onsubmit="event.preventDefault()">
+          <div class="section-label">01 / สื่อและรูปภาพสินค้า</div>
+
+          <div class="upload-row">
+            <div class="image-section" id="dz-main">
+              <input type="file" id="input-main-img" accept="image/*" hidden />
+              <img id="prev-main-img" alt="Main Preview" />
+              <div class="dz-hint" id="hint-main">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+                <span
+                  >รูปหลักสินค้า <br /><span class="req"
+                    >* จำเป็นต้องมี</span
+                  ></span
+                >
+              </div>
+            </div>
+
+            <div class="image-section" id="dz-sub">
+              <input type="file" id="input-sub-img" accept="image/*" hidden />
+              <img id="prev-sub-img" alt="Sub Preview" />
+              <div class="dz-hint" id="hint-sub">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <span
+                  >รูปมุมเพิ่มเติม / เอกสาร<br /><span
+                    style="font-size: 10px; color: var(--ink-faint)"
+                    >(ถ้ามี)</span
+                  ></span
+                >
+              </div>
+            </div>
+          </div>
+
+          <div class="section-label">02 / ข้อมูลทั่วไป & การจัดหมวดหมู่</div>
+
+          <div class="form-row">
+            <div class="form-group col-30">
+              <label for="sku-code">รหัสสินค้า (SKU)</label>
+              <input
+                type="text"
+                id="sku-code"
+                placeholder="SKU-XXXX"
+                required
+              />
+            </div>
+            <div class="form-group col-70">
+              <label for="product-name">ชื่อสินค้า / รายการ</label>
+              <input
+                type="text"
+                id="product-name"
+                placeholder="ระบุชื่อสินค้าเต็ม..."
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-row" style="margin-top: 14px">
+            <div class="form-group col-70">
+              <label for="category">หมวดหมู่หลัก</label>
+              <select id="category" class="custom-select" required>
+                <option value="" disabled selected>-- เลือกหมวดหมู่ --</option>
+                <option value="electronics">
+                  อุปกรณ์อิเล็กทรอนิกส์ (Electronics)
+                </option>
+                <option value="hardware">
+                  อะไหล่และฮาร์ดแวร์ (Hardware Parts)
+                </option>
+                <option value="office">
+                  อุปกรณ์สำนักงาน (Office Supplies)
+                </option>
+                <option value="raw_material">
+                  วัตถุดิบดิบ (Raw Materials)
+                </option>
+              </select>
+            </div>
+            <div class="form-group col-30">
+              <label>สถานะการขาย</label>
+              <div class="toggle-switch-wrapper">
+                <label class="switch">
+                  <input type="checkbox" id="status-toggle" checked />
+                  <span class="slider"></span>
+                </label>
+                <span id="status-text" class="status-indicator active"
+                  >พร้อมขาย</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <div class="section-label">03 / ราคา และการคำนวณคลังสินค้า</div>
+
+          <div id="product-list">
+            <div class="product-item">
+              <div class="item-head">
+                <span class="line-no">CALCULATION LEDGER</span>
+                <span id="stock-badge" class="stock-badge ok">ปกติ</span>
+              </div>
+
+              <div class="ledger-row">
+                <div class="form-group qty">
+                  <label for="cost-price">ต้นทุน (บาท)</label>
+                  <input
+                    type="number"
+                    id="cost-price"
+                    step="0.01"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div class="form-group buy-qty">
+                  <label for="selling-price">ราคาขาย (บาท)</label>
+                  <input
+                    type="number"
+                    id="selling-price"
+                    step="0.01"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+                <div class="form-group qty">
+                  <label for="stock-qty">จำนวนคลัง</label>
+                  <input
+                    type="number"
+                    id="stock-qty"
+                    placeholder="0"
+                    required
+                  />
+                </div>
+                <div class="form-group qty">
+                  <label>กำไรต่อชิ้น</label>
+                  <input type="text" id="profit-margin" value="0.00" readonly />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="btn-group">
+            <button type="reset" class="btn btn-add">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M3 6h18" />
+                <path
+                  d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                />
+              </svg>
+              ล้างข้อมูล
+            </button>
+            <button type="submit" class="btn btn-save">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
+                />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              บันทึกข้อมูลสินค้า
+            </button>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <script src="js/productentry.js"></script>
+  </body>
+</html>

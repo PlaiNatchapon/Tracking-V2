@@ -1,0 +1,362 @@
+/* ==========================================================================
+   Design System & Theme Tokens (Matching Order Entry Theme)
+   ========================================================================== */
+:root {
+  --bg: #e9edf5;
+  --surface: #ffffff;
+  --surface-alt: #f6f7fb;
+  --ink: #141a2b;
+  --ink-soft: #62697d;
+  --ink-faint: #9aa0b1;
+  --line: #e2e5ee;
+  --line-strong: #cdd2e0;
+  --brand: #1e3a7a;
+  --brand-2: #2e57c9;
+  --brand-wash: #eaf0ff;
+  --ok: #157a4f;
+  --ok-wash: #e6f5ee;
+  --warn: #a8630a;
+  --warn-wash: #fdf1de;
+  --danger: #b13228;
+  --danger-wash: #fbeae8;
+  --radius-lg: 20px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --font-display: "Kanit", "IBM Plex Sans Thai", sans-serif;
+  --font-body: "IBM Plex Sans Thai", "Kanit", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(20, 26, 43, 0.055) 1px,
+    transparent 0
+  );
+  background-size: 22px 22px;
+  color: var(--ink);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 18px;
+  min-height: 100vh;
+}
+
+.login-sheet {
+  width: 100%;
+  max-width: 440px;
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Header Brand Section */
+.brand-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.brand-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 10px 24px -6px rgba(30, 58, 122, 0.4);
+  margin-bottom: 12px;
+}
+
+.brand-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+}
+
+.brand-sub {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
+/* Receipt / Ticket Card Styling */
+.login-card {
+  background: var(--surface);
+  width: 100%;
+  padding: 16px 32px 36px;
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 1px 2px rgba(20, 26, 43, 0.04),
+    0 18px 42px -18px rgba(20, 26, 43, 0.28);
+  position: relative;
+}
+
+/* Zigzag Ticket Edge Effect */
+.login-card::before {
+  content: "";
+  position: absolute;
+  top: -11px;
+  left: 0;
+  right: 0;
+  height: 11px;
+  background:
+    linear-gradient(135deg, var(--bg) 50%, transparent 50%),
+    linear-gradient(45deg, transparent 50%, var(--bg) 50%);
+  background-size: 18px 18px;
+  background-position: 0 0, 0 0;
+  background-color: var(--surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  text-align: center;
+  margin: 20px 0 6px;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+
+.card-subtitle {
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 16px 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+/* Form Controls */
+.form-group {
+  margin-bottom: 18px;
+  position: relative;
+}
+
+label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  margin-bottom: 6px;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--ink-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition: color 0.15s;
+}
+
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  padding: 11px 12px 11px 38px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--surface);
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+input::placeholder {
+  color: var(--ink-faint);
+}
+
+input:focus {
+  border-color: var(--brand-2);
+  box-shadow: 0 0 0 3px var(--brand-wash);
+}
+
+input:focus + .input-icon,
+.input-wrapper:focus-within .input-icon {
+  color: var(--brand-2);
+}
+
+.toggle-password {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.toggle-password:hover {
+  color: var(--ink);
+}
+
+/* Alert Notification */
+.alert-banner {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  margin-bottom: 18px;
+  background: var(--danger-wash);
+  color: var(--danger);
+  border: 1px solid rgba(177, 50, 40, 0.2);
+  animation: fadeIn 0.2s ease;
+}
+
+.alert-banner.show {
+  display: flex;
+}
+
+/* Utilities Row */
+.form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  font-size: 12.5px;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--ink-soft);
+  user-select: none;
+}
+
+.remember-me input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand-2);
+  cursor: pointer;
+}
+
+.forgot-link {
+  color: var(--brand-2);
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+
+.forgot-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* Primary Button */
+.btn-login {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+  background: var(--brand);
+  color: white;
+  box-shadow: 0 10px 22px -10px rgba(30, 58, 122, 0.6);
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-login:hover {
+  background: var(--brand-2);
+  box-shadow: 0 12px 26px -8px rgba(46, 87, 201, 0.5);
+}
+
+.btn-login:active {
+  transform: scale(0.98);
+}
+
+.btn-login:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Footer Info */
+.footer-text {
+  text-align: center;
+  margin-top: 22px;
+  font-size: 12px;
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 480px) {
+  body {
+    padding: 24px 12px;
+  }
+  
+  .login-card {
+    padding: 12px 20px 28px;
+  }
+}
