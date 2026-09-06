@@ -337,3 +337,112 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Error loading user info from DB:", err);
   }
 });
+
+
+// ฟังก์ชันแปลงไฟล์รูปภาพเป็น Base64
+const convertFileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+};
+
+async function saveOrder() {
+    try {
+        const userId = localStorage.getItem("user_id") || localStorage.getItem("userId");
+        const employeeName = document.getElementById("employeeName").value;
+        const department = document.getElementById("departmentName").value;
+        const suggestions = document.getElementById("additionalSuggestions").value;
+
+        // ตรวจสอบไฟล์ใบเสนอราคา
+        const fileQuoInput = document.getElementById("fileQuo");
+        if (!fileQuoInput.files || fileQuoInput.files.length === 0) {
+            alert("กรุณาแนบไฟล์ใบเสนอราคาก่อนบันทึก");
+            return;
+        }
+
+        const quotationImage = await convertFileToBase64(fileQuoInput.files[0]);
+        
+        let deliveryImage = null;
+        const fileDelInput = document.getElementById("fileDel");
+        if (fileDelInput.files && fileDelInput.files.length > 0) {
+            deliveryImage = await convertFileToBase64(fileDelInput.files[0]);
+        }
+
+        // วนลูปดึงข้อมูลรายการสินค้า
+        const productItems = document.querySelectorAll(".product-item");
+        const items = [];
+
+        for (let row of productItems) {
+            const code = row.querySelector(".p-code").value.trim();
+            const name = row.querySelector(".p-name").value.trim();
+            const buyQty = parseInt(row.querySelector(".p-buy-qty").value) || 0;
+            const stock = parseInt(row.querySelector(".p-stock").value) || 0;
+
+            if (!code || !name) {
+                alert("กรุณากรอกรหัสและชื่อสินค้าให้ครบถ้วนทุกรายการ");
+                return;
+            }
+
+            if (buyQty > stock) {
+                alert(`สินค้า ${name} (รหัส: ${code}) มีจำนวนคงเหลือไม่พอ (เหลือ ${stock} ชิ้น)`);
+                return;
+            }
+
+            if (buyQty <= 0) {
+                alert(`กรุณาระบุจำนวนสินค้า ${name} ให้มากกว่า 0`);
+                return;
+            }
+
+            items.push({
+                code: code,
+                name: name,
+                category: row.querySelector(".p-category").value || "-",
+                description: row.querySelector(".p-desc").value || "",
+                cost: parseFloat(row.querySelector(".p-cost").value) || 0,
+                sale: parseFloat(row.querySelector(".p-sale").value) || 0,
+                stock: stock,
+                buyQty: buyQty
+            });
+        }
+
+        if (items.length === 0) {
+            alert("กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ");
+            return;
+        }
+
+        const payload = {
+            employeeId: userId,
+            employeeName: employeeName,
+            department: department,
+            quotationImage: quotationImage,
+            deliveryImage: deliveryImage,
+            suggestions: suggestions,
+            items: items
+        };
+
+        // ส่งข้อมูลไปที่ Backend ผ่าน Relative Path
+        const response = await fetch("/api/products/orders", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            alert("บันทึกคำสั่งซื้อและตัดสต็อกสำเร็จเรียบร้อย!");
+            location.reload();
+        } else {
+            alert("เกิดข้อผิดพลาด: " + (result.message || "ไม่สามารถบันทึกได้"));
+        }
+
+    } catch (err) {
+        console.error("Save Order Error:", err);
+        alert("เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์");
+    }
+}
