@@ -73,11 +73,11 @@ window.addEventListener("storage", (event) => {
 });
 
 // ดักจับกรณีผู้ใช้กดย้อนกลับแล้วเบราว์เซอร์ดึงหน้าเว็บเก่าจากหน่วยความจำ (bfcache)
-window.addEventListener('pageshow', (event) => {
-    if (event.persisted) {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            window.location.replace('login.html');
-        }
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      window.location.replace("login.html");
     }
+  }
 });

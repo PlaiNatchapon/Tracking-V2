@@ -64,13 +64,14 @@ document.getElementById("loginForm").addEventListener("submit", function (e) {
         localStorage.setItem("department", result.department);
         localStorage.setItem("userId", result.userId);
         localStorage.setItem("user_id", result.userId);
-        
 
         // เช็กแผนกเพื่อพาเปลี่ยนหน้าไปยังหน้าที่ถูกต้อง
         if (result.department === "sales") {
           window.location.href = "sales.html";
         } else if (result.department === "admin") {
-          window.location.href = "dashboard.html"; // หรือหน้าที่ต้องการให้แอดมินเข้า
+          window.location.href = "dashboard.html";
+        } else if (result.department === "warehouse") {
+          window.location.href = "order.html";
         } else {
           window.location.href = "index.html"; // หน้าค่าเริ่มต้นถ้าไม่ตรงกับเงื่อนไข
         }

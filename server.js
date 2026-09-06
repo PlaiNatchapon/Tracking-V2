@@ -62,6 +62,9 @@ app.use("/api", authRoutes);
 const salesRoutes = require("./backend/Bsales")(pool);
 app.use("/api/products", salesRoutes);
 
+const orderRoutes = require("./backend/Border")(pool);
+app.use("/api/orders", orderRoutes); 
+
 // กำหนดให้เปิดเข้าหน้า login.html ทันทีเมื่อเข้าเว็บพอร์ต 3000
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "login.html"));
