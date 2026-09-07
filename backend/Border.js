@@ -46,5 +46,54 @@ module.exports = function (pool) {
     }
   });
 
+  // ยกเลิกออเดอร์: คืนสต็อกสินค้า และลบข้อมูลออเดอร์ออกจากระบบ
+  router.delete("/cancel/:id", async (req, res) => {
+    const orderId = req.params.id;
+    const client = await pool.connect();
+
+    try {
+      await client.query("BEGIN"); // เริ่ม Transaction
+
+      // 1. ดึงรายการสินค้าทั้งหมดในออเดอร์นี้ เพื่อเอาจำนวนไปคืนสต็อก
+      const itemsResult = await client.query(
+        "SELECT product_code, quantity_taken FROM order_items WHERE order_id = $1",
+        [orderId],
+      );
+
+      // 2. คืนสต็อกสินค้ากลับเข้าตาราง product_inventory
+      for (let item of itemsResult.rows) {
+        await client.query(
+          "UPDATE product_inventory SET stock_remaining = stock_remaining + $1 WHERE product_code = $2",
+          [item.quantity_taken, item.product_code],
+        );
+      }
+
+      // 3. ลบรายการสินค้าในบิลออกจากตาราง order_items (ป้องกันปัญหา Foreign Key)
+      await client.query("DELETE FROM order_items WHERE order_id = $1", [
+        orderId,
+      ]);
+
+      // 4. ลบหัวบิลคำสั่งซื้อออกจากตาราง orders
+      const deleteOrderResult = await client.query(
+        "DELETE FROM orders WHERE id = $1",
+        [orderId],
+      );
+
+      if (deleteOrderResult.rowCount === 0) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ error: "ไม่พบออเดอร์ที่ต้องการยกเลิก" });
+      }
+
+      await client.query("COMMIT"); // ยืนยันการทำงานทั้งหมด
+      res.json({ message: "ยกเลิกออเดอร์และคืนสต็อกสำเร็จเรียบร้อยแล้ว" });
+    } catch (err) {
+      await client.query("ROLLBACK"); // ถ้ามีข้อผิดพลาด ให้ยกเลิกทั้งหมด
+      console.error("Error cancelling order:", err);
+      res.status(500).json({ error: "ไม่สามารถยกเลิกออเดอร์ได้" });
+    } finally {
+      client.release();
+    }
+  });
+
   return router;
 };

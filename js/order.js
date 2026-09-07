@@ -95,9 +95,9 @@ async function loadOrders() {
                 <button class="btn btn-accept" onclick="handleAction('รับออเดอร์ ${orderIdFormatted}')">
                   รับ
                 </button>
-                <button class="btn btn-cancel" onclick="handleAction('ยกเลิกออเดอร์ ${orderIdFormatted}')">
-                  ยกเลิก
-                </button>
+<button class="btn btn-cancel" onclick="cancelOrder(${order.id}, '${orderIdFormatted}')">
+  ยกเลิก
+</button>
               </div>
             `;
 
@@ -118,5 +118,34 @@ function handleLogout() {
   window.location.replace("login.html");
   if (window.history && window.history.pushState) {
     window.history.replaceState(null, null, "login.html");
+  }
+}
+
+// ฟังก์ชันสำหรับกดยกเลิกออเดอร์ (คืนสต็อกและลบข้อมูล)
+async function cancelOrder(orderId, orderIdFormatted) {
+  if (
+    !confirm(
+      `คุณต้องการยกเลิก ${orderIdFormatted} ใช่หรือไม่? ระบบจะคืนสินค้าเข้าคลังและลบออเดอร์นี้ทิ้ง`,
+    )
+  ) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/orders/cancel/${orderId}`, {
+      method: "DELETE",
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      alert(result.message || "ยกเลิกออเดอร์สำเร็จ");
+      loadOrders(); // โหลดรายการออเดอร์ใหม่ทันทีเพื่อให้รายการหายไป
+    } else {
+      alert("เกิดข้อผิดพลาด: " + (result.error || "ไม่สามารถยกเลิกได้"));
+    }
+  } catch (err) {
+    console.error("Error cancelling order:", err);
+    alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์เพื่อยกเลิกออเดอร์ได้");
   }
 }
