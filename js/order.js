@@ -92,9 +92,9 @@ async function loadOrders() {
                 <button class="btn btn-detail" onclick="toggleDetails(${order.id})">
                   ดูรายละเอียด
                 </button>
-                <button class="btn btn-accept" onclick="handleAction('รับออเดอร์ ${orderIdFormatted}')">
-                  รับ
-                </button>
+               <button class="btn btn-accept" onclick="acceptOrder(${order.id}, '${orderIdFormatted}')">
+  รับ
+</button>
 <button class="btn btn-cancel" onclick="cancelOrder(${order.id}, '${orderIdFormatted}')">
   ยกเลิก
 </button>
@@ -148,4 +148,15 @@ async function cancelOrder(orderId, orderIdFormatted) {
     console.error("Error cancelling order:", err);
     alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์เพื่อยกเลิกออเดอร์ได้");
   }
+}
+
+
+// ฟังก์ชันสำหรับกดรับออเดอร์
+async function acceptOrder(orderId, orderIdFormatted) {
+  if (!confirm(`คุณต้องการรับออเดอร์ ${orderIdFormatted} ใช่หรือไม่? ระบบจะนำท่านไปหน้าดำเนินการจัดสินค้า`)) {
+    return;
+  }
+
+  // พาพนักงานเปลี่ยนหน้าไปยังหน้า fulfill.html พร้อมแนบ order_id ไปด้วย
+  window.location.href = `fulfill.html?order_id=${orderId}`;
 }
