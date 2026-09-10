@@ -1,215 +1,935 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>จัดการการจัดสินค้า - Order Fulfillment</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
-    <link rel="stylesheet" href="css/fulfill.css" />
-  </head>
-  <body>
-    <div class="container">
-      <div class="header-title">
-        <div class="header-main-title">
-          <i
-            class="fa-solid fa-file-invoice"
-            style="color: var(--brand-2); font-size: 20px"
-          ></i>
-          <div>
-            <span id="order-title">จัดการออเดอร์ #ORD-...</span>
-            <div
-              style="
-                font-family: var(--font-mono);
-                font-size: 11px;
-                color: var(--ink-faint);
-                margin-top: 1px;
-              "
-              id="order-dept"
-            >
-              แผนก: -
-            </div>
-          </div>
-        </div>
-        <div class="header-actions">
-          <button class="btn-header btn-pickup" onclick="setCustomerPickup()">
-            <i class="fa-solid fa-store"></i> ลูกค้ามารับเอง
-          </button>
-          <button class="btn-header" onclick="viewOrderDetails()">
-            <i class="fa-solid fa-circle-info"></i> รายละเอียด
-          </button>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จัดการการจัดสินค้า - Order Fulfillment</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #e9edf5;
+      --surface: #ffffff;
+      --surface-alt: #f6f7fb;
+      --ink: #141a2b;
+      --ink-soft: #62697d;
+      --ink-faint: #9aa0b1;
+      --line: #e2e5ee;
+      --line-strong: #cdd2e0;
+      --brand: #1e3a7a;
+      --brand-2: #2e57c9;
+      --brand-wash: #eaf0ff;
+      --ok: #157a4f;
+      --ok-wash: #e6f5ee;
+      --warn: #a8630a;
+      --warn-wash: #fdf1de;
+      --danger: #b13228;
+      --danger-wash: #fbeae8;
+      --radius-lg: 20px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --font-display: "Kanit", "IBM Plex Sans Thai", sans-serif;
+      --font-body: "IBM Plex Sans Thai", "Kanit", sans-serif;
+      --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      background-image: radial-gradient(circle at 1px 1px, rgba(20, 26, 43, 0.055) 1px, transparent 0);
+      background-size: 22px 22px;
+      color: var(--ink);
+      padding: 30px 16px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 850px;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line-strong);
+      box-shadow: 0 10px 30px rgba(20, 26, 43, 0.08);
+      padding: 32px;
+      animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .header-title {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .header-main-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-header {
+      padding: 7px 14px;
+      font-size: 13px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      color: var(--brand);
+      cursor: pointer;
+      font-family: var(--font-display);
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .btn-header:hover {
+      background: var(--brand-wash);
+      border-color: var(--brand-2);
+    }
+    .btn-pickup {
+      background: var(--warn-wash);
+      color: var(--warn);
+      border-color: #f7d096;
+    }
+    .btn-pickup:hover {
+      background: #f7e1b5;
+    }
+
+    .section-box {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      color: var(--ink-faint);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+    }
+
+    .section-title i {
+      color: var(--brand-2);
+      font-size: 13px;
+    }
+
+    .doc-images-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
+
+    .doc-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      text-align: center;
+    }
+
+    .doc-card img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .doc-card img:hover { 
+      opacity: 0.85; 
+      transform: scale(1.02);
+    }
+    .doc-label { font-size: 12.5px; font-weight: 500; margin-top: 8px; color: var(--ink-soft); font-family: var(--font-display); }
+
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      transition: border-color 0.2s;
+    }
+    .checklist-item:hover { border-color: var(--line-strong); }
+
+    .checklist-item label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--ink);
+    }
+
+    .checklist-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--brand-2);
+      cursor: pointer;
+    }
+    
+    .item-qty {
+      font-family: var(--font-mono); 
+      font-size: 12.5px; 
+      font-weight: 500; 
+      color: var(--brand-2);
+    }
+
+    .photo-upload-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .photo-preview-card {
+      position: relative;
+      width: 100%;
+      height: 110px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .photo-preview-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      cursor: pointer;
+    }
+
+    .photo-remove-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: rgba(177, 50, 40, 0.85);
+      color: white;
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      transition: background 0.15s;
+    }
+    .photo-remove-btn:hover { background: var(--danger); }
+
+    .photo-add-card {
+      width: 100%;
+      height: 110px;
+      border: 2px dashed var(--line-strong);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--ink-soft);
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .photo-add-card:hover {
+      border-color: var(--brand-2);
+      color: var(--brand-2);
+      background: var(--brand-wash);
+    }
+    .photo-add-card i { font-size: 20px; }
+    .photo-add-card span { font-size: 11px; font-family: var(--font-display); font-weight: 500; }
+
+    .form-control {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--ink);
+      outline: none;
+      transition: all 0.15s ease;
+    }
+    .form-control:focus {
+      border-color: var(--brand-2);
+      box-shadow: 0 0 0 3px var(--brand-wash);
+    }
+
+    textarea.form-control { resize: vertical; min-height: 80px; }
+
+    /* Payment Slip Section Styling */
+    #payment-slip-section {
+      display: none;
+      animation: fadeIn 0.3s ease;
+      border-color: #f7d096;
+      background: #fffdf9;
+    }
+
+    .slip-upload-box {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .slip-preview-container {
+      position: relative;
+      width: 110px;
+      height: 110px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      overflow: hidden;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .slip-preview-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      cursor: pointer;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+      text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn:active { transform: scale(0.98); }
+    
+    .btn-save { 
+      background: var(--brand); 
+      color: #fff; 
+      box-shadow: 0 10px 22px -10px rgba(30, 58, 122, 0.6);
+    }
+    .btn-save:hover { 
+      background: var(--brand-2); 
+      box-shadow: 0 12px 26px -8px rgba(46, 87, 201, 0.5);
+    }
+
+    .btn-cancel-work { 
+      background: var(--surface); 
+      color: var(--danger); 
+      border: 1px solid rgba(177, 50, 40, 0.3);
+    }
+    .btn-cancel-work:hover { background: var(--danger-wash); }
+
+    /* Modal Styling */
+    .modal-backdrop {
+      display: none; 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(20, 26, 43, 0.5); 
+      backdrop-filter: blur(2px);
+      z-index: 1000; 
+      justify-content: center; 
+      align-items: center;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .modal-card {
+      background: var(--surface); 
+      width: 90%; 
+      max-width: 460px; 
+      border-radius: var(--radius-lg); 
+      padding: 24px; 
+      box-shadow: 0 20px 40px -10px rgba(20, 26, 43, 0.3); 
+    }
+
+    .modal-header {
+      font-family: var(--font-display); 
+      font-size: 18px; 
+      font-weight: 600; 
+      color: var(--ink); 
+      margin-bottom: 16px; 
+      border-bottom: 1px solid var(--line); 
+      padding-bottom: 12px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center;
+    }
+
+    .modal-body {
+      font-size: 13.5px; 
+      color: var(--ink); 
+      display: flex; 
+      flex-direction: column; 
+      gap: 8px; 
+      max-height: 60vh; 
+      overflow-y: auto; 
+      padding-right: 4px;
+    }
+
+    .modal-items-box {
+      margin-top: 8px; 
+      border-top: 1px dashed var(--line); 
+      padding-top: 8px;
+    }
+
+    #modal-items-list {
+      margin-top: 6px; 
+      background: var(--surface-alt); 
+      padding: 10px; 
+      border-radius: var(--radius-sm); 
+      border: 1px solid var(--line);
+    }
+
+    .modal-footer {
+      margin-top: 20px; 
+      text-align: right;
+    }
+
+    /* Image Preview Modal Styling */
+    .image-modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 14, 23, 0.85);
+      backdrop-filter: blur(5px);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .image-modal-content {
+      position: relative;
+      max-width: 90%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .image-modal-content img {
+      max-width: 100%;
+      max-height: 80vh;
+      object-fit: contain;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+    }
+
+    .image-modal-close {
+      position: absolute;
+      top: -45px;
+      right: 0;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: background 0.2s;
+    }
+    .image-modal-close:hover { background: rgba(255, 255, 255, 0.4); }
+
+    .image-modal-caption {
+      color: white;
+      font-family: var(--font-display);
+      font-size: 15px;
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 12px 8px; }
+      .container { padding: 18px; }
+      .actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header-title">
+      <div class="header-main-title">
+        <i class="fa-solid fa-file-invoice" style="color: var(--brand-2); font-size: 20px;"></i>
+        <div>
+          <span id="order-title">จัดการออเดอร์ #ORD-...</span>
+          <div style="font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); margin-top: 1px;" id="order-dept">แผนก: -</div>
         </div>
       </div>
-
-      <!-- เอกสารแนบ (เพิ่ม onclick ให้กดเปิดรูปดูขนาดใหญ่ได้) -->
-      <div class="section-box">
-        <div class="section-title">
-          <i class="fa-solid fa-file-lines"></i> เอกสารคำสั่งซื้อ
-          (คลิกรูปเพื่อขยายใหญ่)
-        </div>
-        <div class="doc-images-grid" id="doc-images-container">
-          <div class="doc-card">
-            <img
-              src=""
-              alt="ใบเสนอราคา"
-              id="quotation-img"
-              onclick="openImageModal(this.src, 'ใบเสนอราคา')"
-              onerror="
-                this.src = 'https://placehold.co/300x200?text=No+Quotation'
-              "
-            />
-            <div class="doc-label">ใบเสนอราคา</div>
-          </div>
-          <div class="doc-card">
-            <img
-              src=""
-              alt="ใบส่งสินค้า"
-              id="delivery-img"
-              onclick="openImageModal(this.src, 'ใบส่งสินค้า')"
-              onerror="
-                this.src = 'https://placehold.co/300x200?text=No+Delivery+Image'
-              "
-            />
-            <div class="doc-label">ใบส่งสินค้า</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Checklist -->
-      <div class="section-box">
-        <div class="section-title">
-          <i class="fa-solid fa-list-check"></i> รายการสินค้าที่ต้องจัด
-          (Checklist)
-        </div>
-        <div id="checklist-container"></div>
-      </div>
-
-      <!-- อัปโหลดรูปภาพ -->
-      <div class="section-box">
-        <div class="section-title">
-          <i class="fa-solid fa-camera-retro"></i> รูปภาพการจัดเตรียมสินค้า
-          (เพิ่มได้หลายรูป)
-        </div>
-        <input
-          type="file"
-          id="packing-photos-input"
-          accept="image/*"
-          multiple
-          style="display: none"
-          onchange="handlePhotoUpload(event)"
-        />
-
-        <div class="photo-upload-container" id="photo-preview-grid">
-          <div
-            class="photo-add-card"
-            onclick="document.getElementById('packing-photos-input').click()"
-          >
-            <i class="fa-solid fa-camera"></i>
-            <span>เพิ่มรูปภาพ</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- เลือกรถขนส่ง -->
-      <div class="section-box">
-        <div class="section-title">
-          <i class="fa-solid fa-truck-fast"></i> เลือกยานพาหนะจัดส่ง
-        </div>
-        <select id="vehicle-select" class="form-control">
-          <option value="">-- กรุณาเลือกรถขนส่ง --</option>
-          <option value="pickup-self">
-            ลูกค้ามารับเองที่หน้าร้าน (Self-Pickup)
-          </option>
-          <option value="truck-01">รถบรรทุก 6 ล้อ (ทะเบียน กข 1234)</option>
-          <option value="pickup-02">รถกระบะตู้ทึบ (ทะเบียน ขค 5678)</option>
-          <option value="car-03">รถยนต์ส่วนกลาง (ทะเบียน 3กร 9988)</option>
-        </select>
-      </div>
-
-      <!-- คอมเมนต์ -->
-      <div class="section-box">
-        <div class="section-title">
-          <i class="fa-solid fa-comment-dots"></i> บันทึกข้อความ / คอมเมนต์
-        </div>
-        <textarea
-          id="work-comment"
-          class="form-control"
-          placeholder="ระบุรายละเอียดเพิ่มเติม หรือหมายเหตุในการจัดของ..."
-        ></textarea>
-      </div>
-
-      <div class="actions">
-        <button class="btn btn-cancel-work" onclick="cancelWorkflow()">
-          <i class="fa-solid fa-arrow-rotate-left"></i> ยกเลิกงาน
+      <div class="header-actions">
+        <button class="btn-header btn-pickup" onclick="setCustomerPickup()">
+          <i class="fa-solid fa-store"></i> ลูกค้ามารับเอง
         </button>
-        <button class="btn btn-save" onclick="saveWorkflow()">
-          <i class="fa-solid fa-check-to-slot"></i> บันทึกงานเสร็จสิ้น
+        <button class="btn-header" onclick="viewOrderDetails()">
+          <i class="fa-solid fa-circle-info"></i> รายละเอียด
         </button>
       </div>
     </div>
 
-    <!-- Modal ขยายดูรูปภาพเต็มจอ -->
-    <div
-      id="imageModal"
-      class="image-modal-backdrop"
-      onclick="closeImageModal()"
-    >
-      <div class="image-modal-content" onclick="event.stopPropagation()">
-        <button
-          type="button"
-          class="image-modal-close"
-          onclick="closeImageModal()"
-        >
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-        <img id="modal-zoomed-img" src="" alt="Zoomed Document" />
-        <div id="modal-image-caption" class="image-modal-caption"></div>
+    <!-- เอกสารแนบ -->
+    <div class="section-box">
+      <div class="section-title">
+        <i class="fa-solid fa-file-lines"></i> เอกสารคำสั่งซื้อ (คลิกรูปเพื่อขยายใหญ่)
+      </div>
+      <div class="doc-images-grid" id="doc-images-container">
+        <div class="doc-card">
+          <img src="" alt="ใบเสนอราคา" id="quotation-img" onclick="openImageModal(this.src, 'ใบเสนอราคา')" onerror="this.src='https://placehold.co/300x200?text=No+Quotation'">
+          <div class="doc-label">ใบเสนอราคา</div>
+        </div>
+        <div class="doc-card">
+          <img src="" alt="ใบส่งสินค้า" id="delivery-img" onclick="openImageModal(this.src, 'ใบส่งสินค้า')" onerror="this.src='https://placehold.co/300x200?text=No+Delivery+Image'">
+          <div class="doc-label">ใบส่งสินค้า</div>
+        </div>
       </div>
     </div>
 
-    <!-- Modal รายละเอียดออเดอร์ -->
-    <div id="orderDetailModal" class="modal-backdrop">
-      <div class="modal-card">
-        <div class="modal-header">
-          <span>รายละเอียดออเดอร์ #<span id="modal-order-id">-</span></span>
-          <i
-            class="fa-solid fa-xmark"
-            style="cursor: pointer; color: var(--ink-soft)"
-            onclick="closeModal()"
-          ></i>
+    <!-- Checklist -->
+    <div class="section-box">
+      <div class="section-title">
+        <i class="fa-solid fa-list-check"></i> รายการสินค้าที่ต้องจัด (Checklist)
+      </div>
+      <div id="checklist-container"></div>
+    </div>
+
+    <!-- อัปโหลดรูปภาพการจัดเตรียมสินค้า -->
+    <div class="section-box">
+      <div class="section-title">
+        <i class="fa-solid fa-camera-retro"></i> รูปภาพการจัดเตรียมสินค้า (เพิ่มได้หลายรูป)
+      </div>
+      <input type="file" id="packing-photos-input" accept="image/*" multiple style="display: none;" onchange="handlePhotoUpload(event)">
+      
+      <div class="photo-upload-container" id="photo-preview-grid">
+        <div class="photo-add-card" onclick="document.getElementById('packing-photos-input').click()">
+          <i class="fa-solid fa-camera"></i>
+          <span>เพิ่มรูปภาพ</span>
         </div>
+      </div>
+    </div>
 
-        <div class="modal-body">
-          <div><b>รหัสพนักงาน:</b> <span id="modal-emp-id">-</span></div>
-          <div><b>ผู้ทำรายการ:</b> <span id="modal-emp-name">-</span></div>
-          <div><b>แผนก:</b> <span id="modal-dept">-</span></div>
-          <div><b>ข้อเสนอแนะ:</b> <span id="modal-comment">-</span></div>
-          <div><b>วันที่สร้างรายการ:</b> <span id="modal-date">-</span></div>
+    <!-- เลือกรถขนส่ง -->
+    <div class="section-box">
+      <div class="section-title">
+        <i class="fa-solid fa-truck-fast"></i> เลือกยานพาหนะจัดส่ง / วิธีการรับสินค้า
+      </div>
+      <select id="vehicle-select" class="form-control" onchange="handleVehicleChange()">
+        <option value="">-- กรุณาเลือกรถขนส่ง --</option>
+        <option value="pickup-self">ลูกค้ามารับเองที่หน้าร้าน (Self-Pickup)</option>
+        <option value="truck-01">รถบรรทุก 6 ล้อ (ทะเบียน กข 1234)</option>
+        <option value="pickup-02">รถกระบะตู้ทึบ (ทะเบียน ขค 5678)</option>
+        <option value="car-03">รถยนต์ส่วนกลาง (ทะเบียน 3กร 9988)</option>
+      </select>
+    </div>
 
-          <div class="modal-items-box">
-            <b>รายการสินค้าในบิล:</b>
-            <div id="modal-items-list"></div>
-          </div>
+    <!-- ช่องแนบหลักฐานการชำระเงิน (แสดงเฉพาะเมื่อเลือก Self-Pickup) -->
+    <div class="section-box" id="payment-slip-section">
+      <div class="section-title" style="color: var(--warn);">
+        <i class="fa-solid fa-receipt"></i> แนบหลักฐานการชำระเงิน / สลิปโอนเงิน (Self-Pickup)
+      </div>
+      <input type="file" id="payment-slip-input" accept="image/*" style="display: none;" onchange="handleSlipUpload(event)">
+      
+      <div class="slip-upload-box">
+        <div class="photo-add-card" id="slip-add-btn" style="width: 110px; height: 110px; flex-shrink: 0;" onclick="document.getElementById('payment-slip-input').click()">
+          <i class="fa-solid fa-file-invoice-dollar" style="color: var(--warn);"></i>
+          <span>แนบสลิปเงิน</span>
         </div>
-
-        <div class="modal-footer">
-          <button
-            class="btn btn-save"
-            style="padding: 9px 18px; font-size: 14px"
-            onclick="closeModal()"
-          >
-            ปิดหน้าต่าง
+        
+        <div class="slip-preview-container" id="slip-preview-box">
+          <img id="slip-img-preview" src="" alt="Payment Slip" onclick="openImageModal(this.src, 'หลักฐานการชำระเงิน / สลิปโอนเงิน')">
+          <button type="button" class="photo-remove-btn" onclick="removeSlip()">
+            <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
+        
+        <div style="font-size: 13px; color: var(--ink-soft); line-height: 1.5;">
+          <b>หมายเหตุ:</b> เนื่องจากลูกค้ามารับสินค้าเองที่หน้าร้าน กรุณาตรวจสอบยอดเงินและอัปโหลดหลักฐานการชำระเงินหรือสลิปธนาคารของลูกค้าให้เรียบร้อยก่อนกดบันทึกงาน
+        </div>
       </div>
     </div>
 
-    <script src="js/fulfill.js"></script>
-  </body>
+    <!-- คอมเมนต์ -->
+    <div class="section-box">
+      <div class="section-title">
+        <i class="fa-solid fa-comment-dots"></i> บันทึกข้อความ / คอมเมนต์
+      </div>
+      <textarea id="work-comment" class="form-control" placeholder="ระบุรายละเอียดเพิ่มเติม หรือหมายเหตุในการจัดของ..."></textarea>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-cancel-work" onclick="cancelWorkflow()">
+        <i class="fa-solid fa-arrow-rotate-left"></i> ยกเลิกงาน
+      </button>
+      <button class="btn btn-save" onclick="saveWorkflow()">
+        <i class="fa-solid fa-check-to-slot"></i> บันทึกงานเสร็จสิ้น
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal ขยายดูรูปภาพเต็มจอ -->
+  <div id="imageModal" class="image-modal-backdrop" onclick="closeImageModal()">
+    <div class="image-modal-content" onclick="event.stopPropagation()">
+      <button type="button" class="image-modal-close" onclick="closeImageModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <img id="modal-zoomed-img" src="" alt="Zoomed Document">
+      <div id="modal-image-caption" class="image-modal-caption"></div>
+    </div>
+  </div>
+
+  <!-- Modal รายละเอียดออเดอร์ -->
+  <div id="orderDetailModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span>รายละเอียดออเดอร์ #<span id="modal-order-id">-</span></span>
+        <i class="fa-solid fa-xmark" style="cursor: pointer; color: var(--ink-soft);" onclick="closeModal()"></i>
+      </div>
+      
+      <div class="modal-body">
+        <div><b>รหัสพนักงาน:</b> <span id="modal-emp-id">-</span></div>
+        <div><b>ผู้ทำรายการ:</b> <span id="modal-emp-name">-</span></div>
+        <div><b>แผนก:</b> <span id="modal-dept">-</span></div>
+        <div><b>ข้อเสนอแนะ:</b> <span id="modal-comment">-</span></div>
+        <div><b>วันที่สร้างรายการ:</b> <span id="modal-date">-</span></div>
+        
+        <div class="modal-items-box">
+          <b>รายการสินค้าในบิล:</b>
+          <div id="modal-items-list"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-save" style="padding: 9px 18px; font-size: 14px;" onclick="closeModal()">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get("order_id");
+
+    let uploadedPackingPhotos = [];
+    let uploadedPaymentSlip = null;
+
+    async function loadFulfillData() {
+      if (!orderId) {
+        alert("ไม่พบรหัสออเดอร์");
+        window.location.href = "order.html";
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/orders`);
+        const orders = await response.json();
+        const order = orders.find((o) => o.id == orderId);
+
+        if (!order) {
+          alert("ไม่พบข้อมูลออเดอร์นี้ในระบบ");
+          return;
+        }
+
+        document.getElementById("order-title").innerText = `จัดการออเดอร์ #ORD-${order.id}`;
+        document.getElementById("order-dept").innerText = `แผนก: ${order.department || "-"}`;
+
+        if (order.quotation_image) {
+          document.getElementById("quotation-img").src = order.quotation_image;
+        }
+        if (order.delivery_image) {
+          document.getElementById("delivery-img").src = order.delivery_image;
+        }
+
+        const checkContainer = document.getElementById("checklist-container");
+        checkContainer.innerHTML = "";
+        if (order.items && order.items.length > 0) {
+          order.items.forEach((item) => {
+            checkContainer.innerHTML += `
+              <div class="checklist-item">
+                <label>
+                  <input type="checkbox" class="item-check" data-item-id="${item.id}">
+                  <span><b>${item.product_name}</b> (${item.category || "-"})</span>
+                </label>
+                <span class="item-qty">${item.quantity_taken} ชิ้น</span>
+              </div>
+            `;
+          });
+        } else {
+          checkContainer.innerHTML = '<div style="color: var(--ink-faint); font-size: 13px;">ไม่มีรายการสินค้าในบิลนี้</div>';
+        }
+      } catch (err) {
+        console.error("Error loading fulfill data:", err);
+      }
+    }
+
+    // เปิด/ปิด การแสดงกล่องอัปโหลดสลิปตามตัวเลือกยานพาหนะ
+    function handleVehicleChange() {
+      const vehicleSelect = document.getElementById("vehicle-select").value;
+      const slipSection = document.getElementById("payment-slip-section");
+
+      if (vehicleSelect === "pickup-self") {
+        slipSection.style.display = "block";
+      } else {
+        slipSection.style.display = "none";
+      }
+    }
+
+    // จัดการอัปโหลดสลิปชำระเงิน
+    function handleSlipUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        uploadedPaymentSlip = {
+          file: file,
+          url: e.target.result
+        };
+        
+        document.getElementById("slip-img-preview").src = e.target.result;
+        document.getElementById("slip-preview-box").style.display = "flex";
+        document.getElementById("slip-add-btn").style.display = "none";
+      };
+      reader.readAsDataURL(file);
+      event.target.value = "";
+    }
+
+    function removeSlip() {
+      uploadedPaymentSlip = null;
+      document.getElementById("slip-img-preview").src = "";
+      document.getElementById("slip-preview-box").style.display = "none";
+      document.getElementById("slip-add-btn").style.display = "flex";
+      document.getElementById("payment-slip-input").value = "";
+    }
+
+    function openImageModal(imgSrc, captionText) {
+      if (!imgSrc || imgSrc.includes("placehold.co")) return;
+      document.getElementById("modal-zoomed-img").src = imgSrc;
+      document.getElementById("modal-image-caption").innerText = captionText;
+      document.getElementById("imageModal").style.display = "flex";
+    }
+
+    function closeImageModal() {
+      document.getElementById("imageModal").style.display = "none";
+    }
+
+    function handlePhotoUpload(event) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          uploadedPackingPhotos.push({
+            file: file,
+            url: e.target.result
+          });
+          renderPhotoGrid();
+        };
+        reader.readAsDataURL(file);
+      });
+
+      event.target.value = "";
+    }
+
+    function removePhoto(index) {
+      uploadedPackingPhotos.splice(index, 1);
+      renderPhotoGrid();
+    }
+
+    function renderPhotoGrid() {
+      const gridContainer = document.getElementById("photo-preview-grid");
+      
+      let html = `
+        <div class="photo-add-card" onclick="document.getElementById('packing-photos-input').click()">
+          <i class="fa-solid fa-camera"></i>
+          <span>เพิ่มรูปภาพ</span>
+        </div>
+      `;
+
+      uploadedPackingPhotos.forEach((photo, index) => {
+        html += `
+          <div class="photo-preview-card">
+            <img src="${photo.url}" alt="Packing Photo" onclick="openImageModal('${photo.url}', 'รูปภาพการจัดเตรียมสินค้า รูปที่ ${index + 1}')">
+            <button type="button" class="photo-remove-btn" onclick="event.stopPropagation(); removePhoto(${index})">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        `;
+      });
+
+      gridContainer.innerHTML = html;
+    }
+
+    function setCustomerPickup() {
+      const vehicleSelect = document.getElementById("vehicle-select");
+      vehicleSelect.value = "pickup-self";
+      handleVehicleChange(); // แสดงช่องแนบสลิปทันที
+
+      const commentBox = document.getElementById("work-comment");
+      if (!commentBox.value.trim()) {
+        commentBox.value = "ลูกค้านัดมารับสินค้าเองที่หน้าร้าน";
+      }
+
+      alert("ตั้งค่าเป็น 'ลูกค้ามารับเอง' เรียบร้อยแล้ว กรุณาแนบหลักฐานการชำระเงินด้านล่าง");
+    }
+
+    async function viewOrderDetails() {
+      if (!orderId) {
+        alert("ไม่พบรหัสออเดอร์สำหรับดูรายละเอียด");
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/orders`);
+        const orders = await response.json();
+        const order = orders.find((o) => o.id == orderId);
+
+        if (!order) {
+          alert("ไม่พบข้อมูลออเดอร์ในระบบ");
+          return;
+        }
+
+        document.getElementById("modal-order-id").innerText = order.id;
+        document.getElementById("modal-emp-id").innerText = order.employee_id || "2";
+        document.getElementById("modal-emp-name").innerText = order.employee_name || "นายสมชาย ใจดี";
+        document.getElementById("modal-dept").innerText = order.department || "sales";
+        document.getElementById("modal-comment").innerText = order.comment || order.suggestion || "ฝากใส่ของลงลัง";
+        document.getElementById("modal-date").innerText = order.created_at || "7/9/2569 22:14:43";
+
+        const itemsListContainer = document.getElementById("modal-items-list");
+        itemsListContainer.innerHTML = "";
+
+        if (order.items && order.items.length > 0) {
+          order.items.forEach((item) => {
+            itemsListContainer.innerHTML += `<div style="margin-bottom: 4px;">• ${item.product_name} <b>${item.quantity_taken} ชิ้น</b></div>`;
+          });
+        } else {
+          itemsListContainer.innerHTML = `
+            <div style="margin-bottom: 4px;">• เหล็กฉาก 1.5*1.5 ฟ้า (เหล็กรูปพรรณชุบ) <b>1 ชิ้น</b></div>
+            <div>• เหล็กกล่องชุบสังกะสี 1*1 ชมพู (เหล็กรูปพรรณชุบ) <b>3 ชิ้น</b></div>
+          `;
+        }
+
+        document.getElementById("orderDetailModal").style.display = "flex";
+      } catch (err) {
+        console.error("Error loading order details:", err);
+        document.getElementById("modal-order-id").innerText = orderId;
+        document.getElementById("modal-emp-id").innerText = "2";
+        document.getElementById("modal-emp-name").innerText = "นายสมชาย ใจดี";
+        document.getElementById("modal-dept").innerText = "sales";
+        document.getElementById("modal-comment").innerText = "ฝากใส่ของลงลัง";
+        document.getElementById("modal-date").innerText = "7/9/2569 22:14:43";
+
+        document.getElementById("modal-items-list").innerHTML = `
+          <div style="margin-bottom: 4px;">• เหล็กฉาก 1.5*1.5 ฟ้า (เหล็กรูปพรรณชุบ) <b>1 ชิ้น</b></div>
+          <div>• เหล็กกล่องชุบสังกะสี 1*1 ชมพู (เหล็กรูปพรรณชุบ) <b>3 ชิ้น</b></div>
+        `;
+        document.getElementById("orderDetailModal").style.display = "flex";
+      }
+    }
+
+    function closeModal() {
+      document.getElementById("orderDetailModal").style.display = "none";
+    }
+
+    function cancelWorkflow() {
+      if (confirm("คุณต้องการยกเลิกและกลับสู่หน้าคิวออเดอร์หลักหรือไม่?")) {
+        window.location.href = "order.html";
+      }
+    }
+
+    function saveWorkflow() {
+      const checkboxes = document.querySelectorAll(".item-check");
+      const allChecked = Array.from(checkboxes).every((cb) => cb.checked);
+
+      if (!allChecked && !confirm("ยังมีสินค้าบางรายการที่ยังไม่ได้ติ๊กตรวจสอบ ยืนยันการบันทึกงานใช่หรือไม่?")) {
+        return;
+      }
+
+      const vehicle = document.getElementById("vehicle-select").value;
+      if (!vehicle) {
+        alert("กรุณาเลือกรถขนส่งหรือระบุประเภทการรับสินค้าก่อนบันทึกงาน");
+        return;
+      }
+
+      // เช็กเงื่อนไขกรณีเลือก Self-Pickup แล้วยังไม่ได้แนบสลิป
+      if (vehicle === "pickup-self" && !uploadedPaymentSlip) {
+        alert("กรุณาแนบหลักฐานการชำระเงิน (สลิปโอนเงิน) เนื่องจากเลือกลูกค้ามารับเองที่หน้าร้าน");
+        return;
+      }
+
+      alert("บันทึกข้อมูลการจัดงานและหลักฐานเรียบร้อยแล้ว!");
+      window.location.href = "order.html";
+    }
+
+    window.addEventListener("DOMContentLoaded", loadFulfillData);
+  </script>
+</body>
 </html>
