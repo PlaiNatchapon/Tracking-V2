@@ -9,83 +9,6 @@ function handleAction(message) {
   alert("ดำเนินการ: " + message);
 }
 
-// --- ฟังก์ชันจัดการซ่อนและกู้คืนออเดอร์ผ่าน localStorage ---
-function getHiddenOrderIds() {
-  const hidden = localStorage.getItem("hidden_orders");
-  return hidden ? JSON.parse(hidden) : [];
-}
-
-function hideOrderLocally(orderId) {
-  let hidden = getHiddenOrderIds();
-  if (!hidden.includes(orderId)) {
-    hidden.push(orderId);
-    localStorage.setItem("hidden_orders", JSON.stringify(hidden));
-  }
-}
-
-function restoreOrder(orderId) {
-  let hidden = getHiddenOrderIds();
-  hidden = hidden.filter((id) => id != orderId);
-  localStorage.setItem("hidden_orders", JSON.stringify(hidden));
-  loadOrders();
-  toggleHiddenOrdersModal();
-}
-
-async function toggleHiddenOrdersModal() {
-  let modal = document.getElementById("hiddenOrdersModal");
-  if (!modal) {
-    const modalHTML = `
-      <div id="hiddenOrdersModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
-        <div style="background:white; padding:20px; border-radius:8px; width:400px; max-height:80vh; overflow-y:auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-          <h3 style="margin-top:0; font-size:18px;">ออเดอร์ที่ซ่อน / กำลังดำเนินการ</h3>
-          <div id="hidden-orders-list" style="margin: 15px 0;"></div>
-          <button class="btn" onclick="toggleHiddenOrdersModal()" style="background:#ccc; width:100%; padding:8px; border:none; border-radius:4px; cursor:pointer;">ปิด</button>
-        </div>
-      </div>
-    `;
-    document.body.insertAdjacentHTML("beforeend", modalHTML);
-    modal = document.getElementById("hiddenOrdersModal");
-  }
-
-  if (modal.style.display === "flex") {
-    modal.style.display = "none";
-    return;
-  }
-
-  const container = document.getElementById("hidden-orders-list");
-  container.innerHTML = "กำลังโหลด...";
-  modal.style.display = "flex";
-
-  try {
-    const response = await fetch("/api/orders");
-    const orders = await response.json();
-    const hiddenIds = getHiddenOrderIds();
-    const hiddenOrders = orders.filter((o) => hiddenIds.includes(o.id));
-
-    const badgeEl = document.getElementById("hidden-count");
-    if (badgeEl) badgeEl.innerText = hiddenIds.length;
-
-    if (hiddenOrders.length === 0) {
-      container.innerHTML =
-        '<div style="color: #888; text-align:center; padding: 10px;">ไม่มีออเดอร์ที่ถูกซ่อน</div>';
-      return;
-    }
-
-    container.innerHTML = "";
-    hiddenOrders.forEach((order) => {
-      container.innerHTML += `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #eee;">
-          <span style="font-size: 14px;">#ORD-${order.id} (${order.department || "-"})</span>
-          <button class="btn" style="padding:4px 10px; font-size:12px; background:var(--primary, #007bff); color:white; border:none; border-radius:4px; cursor:pointer;" onclick="restoreOrder(${order.id})">กู้คืน</button>
-        </div>
-      `;
-    });
-  } catch (err) {
-    container.innerHTML = "เกิดข้อผิดพลาดในการโหลดข้อมูล";
-  }
-}
-// --------------------------------------------------------
-
 // ฟังก์ชันดึงข้อมูลออเดอร์จาก Backend มาแสดงผล
 async function loadOrders() {
   try {
@@ -95,21 +18,16 @@ async function loadOrders() {
     const orderListContainer = document.getElementById("order-list");
     orderListContainer.innerHTML = "";
 
-    const hiddenIds = getHiddenOrderIds();
-    const filteredOrders = orders
-      ? orders.filter((order) => !hiddenIds.includes(order.id))
-      : [];
+    // กรองแสดงเฉพาะออเดอร์ที่ยังไม่มีสถานะ หรือสถานะเป็น 'pending' (ยังไม่มีใครกดรับ)
+    const pendingOrders = orders ? orders.filter(order => !order.status || order.status === 'pending') : [];
 
-    const badgeEl = document.getElementById("hidden-count");
-    if (badgeEl) badgeEl.innerText = hiddenIds.length;
-
-    if (!filteredOrders || filteredOrders.length === 0) {
+    if (!pendingOrders || pendingOrders.length === 0) {
       orderListContainer.innerHTML =
         '<div style="text-align: center; color: var(--ink-faint); padding: 20px;">ไม่มีรายการออเดอร์ในขณะนี้</div>';
       return;
     }
 
-    filteredOrders.forEach((order) => {
+    pendingOrders.forEach((order) => {
       const orderIdFormatted = `#ORD-${order.id}`;
       const totalItemsCount = order.items
         ? order.items.reduce(
@@ -177,12 +95,12 @@ async function loadOrders() {
                 <button class="btn btn-detail" onclick="toggleDetails(${order.id})">
                   ดูรายละเอียด
                 </button>
-               <button class="btn btn-accept" onclick="acceptOrder(${order.id}, '${orderIdFormatted}')">
-  รับ
-</button>
-<button class="btn btn-cancel" onclick="cancelOrder(${order.id}, '${orderIdFormatted}')">
-  ยกเลิก
-</button>
+                <button class="btn btn-accept" onclick="acceptOrder(${order.id}, '${orderIdFormatted}')">
+                  รับ
+                </button>
+                <button class="btn btn-cancel" onclick="cancelOrder(${order.id}, '${orderIdFormatted}')">
+                  ยกเลิก
+                </button>
               </div>
             `;
 
@@ -235,7 +153,7 @@ async function cancelOrder(orderId, orderIdFormatted) {
   }
 }
 
-// ฟังก์ชันสำหรับกดรับออเดอร์
+// ฟังก์ชันสำหรับกดรับออเดอร์ (อัปเดตสถานะลง Database เพื่อซ่อนจากทุกเครื่องทันที)
 async function acceptOrder(orderId, orderIdFormatted) {
   if (
     !confirm(
@@ -245,9 +163,23 @@ async function acceptOrder(orderId, orderIdFormatted) {
     return;
   }
 
-  // ซ่อนออเดอร์นี้ในเครื่องทันที
-  hideOrderLocally(orderId);
+  try {
+    // ส่งคำขอไปอัปเดตสถานะในฐานข้อมูลเป็น accepted
+    const response = await fetch(`/api/orders/accept/${orderId}`, {
+      method: "PUT",
+    });
 
-  // พาพนักงานเปลี่ยนหน้าไปยังหน้า fulfill.html พร้อมแนบ order_id ไปด้วย
-  window.location.href = `fulfill.html?order_id=${orderId}`;
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert("เกิดข้อผิดพลาด: " + (result.error || "ไม่สามารถรับออเดอร์ได้"));
+      return;
+    }
+
+    // พาพนักงานเปลี่ยนหน้าไปยังหน้า fulfill.html พร้อมแนบ order_id ไปด้วย
+    window.location.href = `fulfill.html?order_id=${orderId}`;
+  } catch (err) {
+    console.error("Error accepting order:", err);
+    alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์เพื่อรับออเดอร์ได้");
+  }
 }
