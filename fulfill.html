@@ -824,7 +824,7 @@
       alert("ตั้งค่าเป็น 'ลูกค้ามารับเอง' เรียบร้อยแล้ว กรุณาแนบหลักฐานการชำระเงินด้านล่าง");
     }
 
-    async function viewOrderDetails() {
+async function viewOrderDetails() {
       if (!orderId) {
         alert("ไม่พบรหัสออเดอร์สำหรับดูรายละเอียด");
         return;
@@ -840,10 +840,13 @@
         }
 
         document.getElementById("modal-order-id").innerText = order.id;
-        document.getElementById("modal-emp-id").innerText = order.employee_id || "2";
-        document.getElementById("modal-emp-name").innerText = order.employee_name || "นายสมชาย ใจดี";
-        document.getElementById("modal-dept").innerText = order.department || "sales";
-        document.getElementById("modal-comment").innerText = order.comment || order.suggestion || "ฝากใส่ของลงลัง";
+        document.getElementById("modal-emp-id").innerText = order.employee_id || "-";
+        document.getElementById("modal-emp-name").innerText = order.employee_name || "-";
+        document.getElementById("modal-dept").innerText = order.department || "-";
+        
+        // ใช้ order.suggestions ให้ตรงกับฝั่ง Backend ที่คุณเขียนไว้
+        document.getElementById("modal-comment").innerText = order.suggestions || "-";
+        
         document.getElementById("modal-date").innerText = order.created_at || "-";
 
         const itemsListContainer = document.getElementById("modal-items-list");
@@ -852,6 +855,8 @@
           order.items.forEach((item) => {
             itemsListContainer.innerHTML += `<div style="margin-bottom: 4px;">• ${item.product_name} <b>${item.quantity_taken} ชิ้น</b></div>`;
           });
+        } else {
+          itemsListContainer.innerHTML = '<div style="color: var(--ink-faint);">ไม่มีรายการสินค้า</div>';
         }
         document.getElementById("orderDetailModal").style.display = "flex";
       } catch (err) {
