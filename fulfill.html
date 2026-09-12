@@ -869,6 +869,7 @@
     async function cancelWorkflow() {
       if (confirm("คุณต้องการยกเลิกและคืนงานกลับสู่หน้าคิวออเดอร์หลักหรือไม่?")) {
         isTaskCompletedOrCancelled = true;
+        clearHeartbeat(); // ⬅️ หยุดส่ง Heartbeat ทันทีเมื่อยกเลิกงาน
         
         try {
           // ส่ง request ไปที่ Node.js Backend เพื่อปลดล็อกฐานข้อมูล
@@ -911,6 +912,8 @@
       }
 
       isTaskCompletedOrCancelled = true;
+      clearHeartbeat(); // ⬅️ หยุดส่ง Heartbeat ทันทีเมื่อบันทึกงานสำเร็จ
+      
       alert("บันทึกข้อมูลการจัดงานและหลักฐานเรียบร้อยแล้ว!");
       window.location.href = "order.html";
     }
@@ -921,6 +924,21 @@
       e.preventDefault();
       e.returnValue = "";
     });
+
+    // ส่งสัญญาณบอกเซิร์ฟเวอร์ทุก 15 วินาที ว่าฉันยังทำงานอยู่นะ!
+    const heartbeatInterval = setInterval(() => {
+      if (orderId && !isTaskCompletedOrCancelled) {
+        // ใช้ Blob เพื่อกำหนด Content-Type เป็น application/json ให้ถูกต้องสำหรับ sendBeacon
+        const data = JSON.stringify({ order_id: orderId });
+        const blob = new Blob([data], { type: 'application/json' });
+        navigator.sendBeacon('/api/orders/heartbeat', blob);
+      }
+    }, 15000);
+
+    // เมื่อกดบันทึกหรือยกเลิกงาน ให้เคลียร์ตัวจับเวลานี้ทิ้ง
+    function clearHeartbeat() {
+      clearInterval(heartbeatInterval);
+    }
 
     window.addEventListener("DOMContentLoaded", loadFulfillData);
   </script>

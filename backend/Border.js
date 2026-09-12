@@ -46,11 +46,15 @@ module.exports = function (pool) {
     }
   });
 
-  // เพิ่ม API สำหรับกดรับออเดอร์ (เปลี่ยนสถานะเป็น accepted เพื่อซ่อนจากทุกจอ)
+// เพิ่ม API สำหรับกดรับออเดอร์ (เปลี่ยนสถานะเป็น accepted และเริ่มนับเวลาล็อก)
   router.put("/accept/:id", async (req, res) => {
     const orderId = req.params.id;
     try {
-      await pool.query("UPDATE orders SET status = 'accepted' WHERE id = $1", [orderId]);
+      // เพิ่ม locked_at = NOW() เข้าไปตรงนี้ครับ!
+      await pool.query(
+        "UPDATE orders SET status = 'accepted', locked_at = NOW() WHERE id = $1", 
+        [orderId]
+      );
       res.json({ message: "รับออเดอร์สำเร็จ" });
     } catch (err) {
       console.error("Error accepting order:", err);
