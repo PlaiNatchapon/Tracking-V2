@@ -1,4 +1,18 @@
 const express = require("express");
+const multer = require("multer");
+const path = require("path");
+
+// ตั้งค่าที่เก็บไฟล์รูปภาพอัปโหลดชั่วคราวหรือถาวร (เก็บไว้ที่โฟลเดอร์ uploads/)
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/"); // ตรวจสอบว่ามีโฟลเดอร์ uploads อยู่ในโปรเจกต์แล้ว หรือให้สร้างไว้
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage: storage });
 
 module.exports = function (pool) {
   const router = express.Router();
@@ -12,7 +26,6 @@ module.exports = function (pool) {
         return res.status(400).json({ success: false, error: "ไม่พบรหัสออเดอร์ที่ต้องการยกเลิก" });
       }
 
-      // อัปเดตฐานข้อมูล PostgreSQL เพื่อปลดล็อกสถานะออเดอร์ และเคลียร์ locked_at เป็น NULL
       const query = `
         UPDATE orders 
         SET status = 'pending', employee_id = NULL, locked_at = NULL 
@@ -20,7 +33,6 @@ module.exports = function (pool) {
       `;
       await pool.query(query, [order_id]);
 
-      // ส่ง Socket แจ้งเตือน Real-time
       const io = req.app.get("io");
       const userSockets = req.app.get("userSockets");
       
@@ -36,7 +48,7 @@ module.exports = function (pool) {
     }
   });
 
-  // 1. รับสัญญาณ Heartbeat จากหน้าเว็บเพื่อต่ออายุการล็อกออเดอร์ (ห่อด้วย try-catch ป้องกัน Error 500)
+  // 1. รับสัญญาณ Heartbeat จากหน้าเว็บเพื่อต่ออายุการล็อกออเดอร์
   router.post("/heartbeat", async (req, res) => {
     try {
       const { order_id } = req.body;
@@ -53,9 +65,8 @@ module.exports = function (pool) {
     }
   });
 
- // 2. ฟังก์ชันตรวจสอบอัตโนมัติ (รันทุกๆ 30 วินาที)
+  // 2. ฟังก์ชันตรวจสอบอัตโนมัติ (รันทุกๆ 30 วินาที)
   setInterval(async () => {
-    console.log("[Heartbeat Check] กำลังตรวจสอบออเดอร์ค้างในระบบ...");
     try {
       const query = `
         UPDATE orders 
@@ -72,12 +83,53 @@ module.exports = function (pool) {
           const io = req.app.get("io");
           if (io) io.emit("order_released", { order_id: row.id });
         });
-      } else {
-        console.log("[Heartbeat Check] ไม่พบออเดอร์ที่หมดเวลาล็อก");
       }
     } catch (err) {
       console.error("Heartbeat interval check error:", err);
     }
   }, 30000);
+
+
+  // API สำหรับบันทึกข้อมูล Fulfillment (รองรับการอัปโหลดรูปภาพผ่าน multer)
+  router.put("/fulfillment/:id", upload.fields([
+    { name: 'packing_photos', maxCount: 10 },
+    { name: 'payment_slip', maxCount: 1 }
+  ]), async (req, res) => {
+    const orderId = req.params.id;
+    const { vehicle_selection, work_comment, status } = req.body;
+
+    // เช็กไฟล์ที่ถูกอัปโหลดเข้ามา (ถ้าต้องการเก็บบันทึกลง Database สามารถเอา path ไปใช้ต่อได้ตรงนี้)
+    const packingPhotosFiles = req.files['packing_photos'] || [];
+    const paymentSlipFile = req.files['payment_slip'] ? req.files['payment_slip'][0] : null;
+
+    // ตัวอย่าง path สำหรับบันทึกลง DB (ปรับเปลี่ยนตามโครงสร้างตาราง database ของคุณ)
+    const paymentSlipPath = paymentSlipFile ? `/uploads/${paymentSlipFile.filename}` : null;
+
+    try {
+      // (ถ้าตารางฐานข้อมูลของคุณมีคอลัมน์เก็บสลิปหรือรูปแพ็คสินค้า สามารถนำตัวแปรไปอัปเดตเพิ่มใน query ได้เลยครับ)
+      const query = `
+        UPDATE orders 
+        SET 
+          vehicle_selection = $1,
+          work_comment = $2,
+          status = COALESCE($3, status)
+        WHERE id = $4
+      `;
+
+      await pool.query(query, [
+        vehicle_selection || null,
+        work_comment || null,
+        status || 'completed',
+        orderId
+      ]);
+
+      console.log(`[Backend] บันทึกข้อมูลออเดอร์ #${orderId} สำเร็จ`);
+      res.json({ message: "บันทึกข้อมูลการจัดสินค้าสำเร็จ" });
+    } catch (err) {
+      console.error("Error updating fulfillment:", err);
+      res.status(500).json({ error: "ไม่สามารถบันทึกข้อมูลการจัดสินค้าได้: " + err.message });
+    }
+  });
+
   return router;
 };

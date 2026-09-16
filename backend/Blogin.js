@@ -53,6 +53,7 @@ module.exports = function (pool) {
         token: newToken,
         department: user.department,
         userId: user.id,
+        fullname: user.fullname,
       });
     } catch (err) {
       console.error(err);

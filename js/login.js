@@ -64,6 +64,7 @@ document.getElementById("loginForm").addEventListener("submit", function (e) {
         localStorage.setItem("department", result.department);
         localStorage.setItem("userId", result.userId);
         localStorage.setItem("user_id", result.userId);
+        localStorage.setItem("fullname", result.fullname);
 
         // เช็กแผนกเพื่อพาเปลี่ยนหน้าไปยังหน้าที่ถูกต้อง
         if (result.department === "sales") {
