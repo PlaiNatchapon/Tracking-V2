@@ -153,11 +153,9 @@ module.exports = function (pool) {
         res.json({ message: "บันทึกข้อมูลการจัดสินค้าสำเร็จ" });
       } catch (err) {
         console.error("Error updating fulfillment:", err);
-        res
-          .status(500)
-          .json({
-            error: "ไม่สามารถบันทึกข้อมูลการจัดสินค้าได้: " + err.message,
-          });
+        res.status(500).json({
+          error: "ไม่สามารถบันทึกข้อมูลการจัดสินค้าได้: " + err.message,
+        });
       }
     },
   );
