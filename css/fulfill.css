@@ -1,4 +1,4 @@
-     :root {
+      :root {
         --bg: #e9edf5;
         --surface: #ffffff;
         --surface-alt: #f6f7fb;
@@ -220,7 +220,6 @@
         color: var(--brand-2);
       }
 
-      /* Multi-Photo Upload Area Styling */
       .photo-upload-container {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
@@ -320,6 +319,39 @@
         min-height: 80px;
       }
 
+      #payment-slip-section {
+        display: none;
+        animation: fadeIn 0.3s ease;
+        border-color: #f7d096;
+        background: #fffdf9;
+      }
+
+      .slip-upload-box {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .slip-preview-container {
+        position: relative;
+        width: 110px;
+        height: 110px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--line);
+        background: var(--surface);
+        overflow: hidden;
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      .slip-preview-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        cursor: pointer;
+      }
+
       .actions {
         display: flex;
         gap: 12px;
@@ -365,7 +397,6 @@
         background: var(--danger-wash);
       }
 
-      /* Modal Styling */
       .modal-backdrop {
         display: none;
         position: fixed;
@@ -433,7 +464,6 @@
         text-align: right;
       }
 
-      /* Image Preview Modal Styling */
       .image-modal-backdrop {
         display: none;
         position: fixed;

@@ -2,6 +2,8 @@
       const orderId = urlParams.get("order_id");
 
       let uploadedPackingPhotos = [];
+      let uploadedPaymentSlip = null;
+      let isTaskCompletedOrCancelled = false; // ตัวแปรเช็กสถานะเพื่อป้องกันแจ้งเตือนซ้ำซ้อนตอนกดปุ่ม
 
       async function loadFulfillData() {
         if (!orderId) {
@@ -56,15 +58,47 @@
         }
       }
 
-      // ฟังก์ชันเปิด Modal ขยายรูปภาพ
+      function handleVehicleChange() {
+        const vehicleSelect = document.getElementById("vehicle-select").value;
+        const slipSection = document.getElementById("payment-slip-section");
+
+        if (vehicleSelect === "pickup-self") {
+          slipSection.style.display = "block";
+        } else {
+          slipSection.style.display = "none";
+        }
+      }
+
+      function handleSlipUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          uploadedPaymentSlip = { file: file, url: e.target.result };
+          document.getElementById("slip-img-preview").src = e.target.result;
+          document.getElementById("slip-preview-box").style.display = "flex";
+          document.getElementById("slip-add-btn").style.display = "none";
+        };
+        reader.readAsDataURL(file);
+        event.target.value = "";
+      }
+
+      function removeSlip() {
+        uploadedPaymentSlip = null;
+        document.getElementById("slip-img-preview").src = "";
+        document.getElementById("slip-preview-box").style.display = "none";
+        document.getElementById("slip-add-btn").style.display = "flex";
+        document.getElementById("payment-slip-input").value = "";
+      }
+
       function openImageModal(imgSrc, captionText) {
-        if (!imgSrc || imgSrc.includes("placehold.co")) return; // ถ้าไม่มีรูปจริงหรือเป็นภาพ Placeholder ไม่ต้องเปิด
+        if (!imgSrc || imgSrc.includes("placehold.co")) return;
         document.getElementById("modal-zoomed-img").src = imgSrc;
         document.getElementById("modal-image-caption").innerText = captionText;
         document.getElementById("imageModal").style.display = "flex";
       }
 
-      // ฟังก์ชันปิด Modal ขยายรูปภาพ
       function closeImageModal() {
         document.getElementById("imageModal").style.display = "none";
       }
@@ -76,15 +110,11 @@
         Array.from(files).forEach((file) => {
           const reader = new FileReader();
           reader.onload = function (e) {
-            uploadedPackingPhotos.push({
-              file: file,
-              url: e.target.result,
-            });
+            uploadedPackingPhotos.push({ file: file, url: e.target.result });
             renderPhotoGrid();
           };
           reader.readAsDataURL(file);
         });
-
         event.target.value = "";
       }
 
@@ -95,14 +125,12 @@
 
       function renderPhotoGrid() {
         const gridContainer = document.getElementById("photo-preview-grid");
-
         let html = `
         <div class="photo-add-card" onclick="document.getElementById('packing-photos-input').click()">
           <i class="fa-solid fa-camera"></i>
           <span>เพิ่มรูปภาพ</span>
         </div>
       `;
-
         uploadedPackingPhotos.forEach((photo, index) => {
           html += `
           <div class="photo-preview-card">
@@ -113,20 +141,21 @@
           </div>
         `;
         });
-
         gridContainer.innerHTML = html;
       }
 
       function setCustomerPickup() {
         const vehicleSelect = document.getElementById("vehicle-select");
         vehicleSelect.value = "pickup-self";
+        handleVehicleChange();
 
         const commentBox = document.getElementById("work-comment");
         if (!commentBox.value.trim()) {
           commentBox.value = "ลูกค้านัดมารับสินค้าเองที่หน้าร้าน";
         }
-
-        alert("ตั้งค่าเป็น 'ลูกค้ามารับเอง' เรียบร้อยแล้ว");
+        alert(
+          "ตั้งค่าเป็น 'ลูกค้ามารับเอง' เรียบร้อยแล้ว กรุณาแนบหลักฐานการชำระเงินด้านล่าง",
+        );
       }
 
       async function viewOrderDetails() {
@@ -134,7 +163,6 @@
           alert("ไม่พบรหัสออเดอร์สำหรับดูรายละเอียด");
           return;
         }
-
         try {
           const response = await fetch(`/api/orders`);
           const orders = await response.json();
@@ -147,46 +175,33 @@
 
           document.getElementById("modal-order-id").innerText = order.id;
           document.getElementById("modal-emp-id").innerText =
-            order.employee_id || "2";
+            order.employee_id || "-";
           document.getElementById("modal-emp-name").innerText =
-            order.employee_name || "นายสมชาย ใจดี";
+            order.employee_name || "-";
           document.getElementById("modal-dept").innerText =
-            order.department || "sales";
+            order.department || "-";
+
+          // ใช้ order.suggestions ให้ตรงกับฝั่ง Backend ที่คุณเขียนไว้
           document.getElementById("modal-comment").innerText =
-            order.comment || order.suggestion || "ฝากใส่ของลงลัง";
+            order.suggestions || "-";
+
           document.getElementById("modal-date").innerText =
-            order.created_at || "7/9/2569 22:14:43";
+            order.created_at || "-";
 
           const itemsListContainer =
             document.getElementById("modal-items-list");
           itemsListContainer.innerHTML = "";
-
           if (order.items && order.items.length > 0) {
             order.items.forEach((item) => {
               itemsListContainer.innerHTML += `<div style="margin-bottom: 4px;">• ${item.product_name} <b>${item.quantity_taken} ชิ้น</b></div>`;
             });
           } else {
-            itemsListContainer.innerHTML = `
-            <div style="margin-bottom: 4px;">• เหล็กฉาก 1.5*1.5 ฟ้า (เหล็กรูปพรรณชุบ) <b>1 ชิ้น</b></div>
-            <div>• เหล็กกล่องชุบสังกะสี 1*1 ชมพู (เหล็กรูปพรรณชุบ) <b>3 ชิ้น</b></div>
-          `;
+            itemsListContainer.innerHTML =
+              '<div style="color: var(--ink-faint);">ไม่มีรายการสินค้า</div>';
           }
-
           document.getElementById("orderDetailModal").style.display = "flex";
         } catch (err) {
           console.error("Error loading order details:", err);
-          document.getElementById("modal-order-id").innerText = orderId;
-          document.getElementById("modal-emp-id").innerText = "2";
-          document.getElementById("modal-emp-name").innerText = "นายสมชาย ใจดี";
-          document.getElementById("modal-dept").innerText = "sales";
-          document.getElementById("modal-comment").innerText = "ฝากใส่ของลงลัง";
-          document.getElementById("modal-date").innerText = "7/9/2569 22:14:43";
-
-          document.getElementById("modal-items-list").innerHTML = `
-          <div style="margin-bottom: 4px;">• เหล็กฉาก 1.5*1.5 ฟ้า (เหล็กรูปพรรณชุบ) <b>1 ชิ้น</b></div>
-          <div>• เหล็กกล่องชุบสังกะสี 1*1 ชมพู (เหล็กรูปพรรณชุบ) <b>3 ชิ้น</b></div>
-        `;
-          document.getElementById("orderDetailModal").style.display = "flex";
         }
       }
 
@@ -194,13 +209,40 @@
         document.getElementById("orderDetailModal").style.display = "none";
       }
 
-      function cancelWorkflow() {
-        if (confirm("คุณต้องการยกเลิกและกลับสู่หน้าคิวออเดอร์หลักหรือไม่?")) {
+      /* ==========================================
+       * [FRONTEND] ฟังก์ชันยกเลิกงาน (ส่งคำสั่งไปบอก Backend Node.js)
+       * ========================================== */
+      async function cancelWorkflow() {
+        if (
+          confirm("คุณต้องการยกเลิกและคืนงานกลับสู่หน้าคิวออเดอร์หลักหรือไม่?")
+        ) {
+          isTaskCompletedOrCancelled = true;
+          clearHeartbeat(); // ⬅️ หยุดส่ง Heartbeat ทันทีเมื่อยกเลิกงาน
+
+          try {
+            // ส่ง request ไปที่ Node.js Backend เพื่อปลดล็อกฐานข้อมูล
+            const response = await fetch("/api/orders/cancel-fulfillment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ order_id: orderId }),
+            });
+
+            const result = await response.json();
+            if (!result.success) {
+              alert(
+                "แจ้งเตือนจากระบบ: " + (result.error || "ไม่สามารถคืนงานได้"),
+              );
+            }
+          } catch (e) {
+            console.error("API Error:", e);
+          }
+
+          // พาผู้ใช้กลับไปหน้า order.html
           window.location.href = "order.html";
         }
       }
 
-      function saveWorkflow() {
+      async function saveWorkflow() {
         const checkboxes = document.querySelectorAll(".item-check");
         const allChecked = Array.from(checkboxes).every((cb) => cb.checked);
 
@@ -219,8 +261,40 @@
           return;
         }
 
-        alert("บันทึกข้อมูลการจัดงานเรียบร้อยแล้ว!");
+        if (vehicle === "pickup-self" && !uploadedPaymentSlip) {
+          alert(
+            "กรุณาแนบหลักฐานการชำระเงิน (สลิปโอนเงิน) เนื่องจากเลือกลูกค้ามารับเองที่หน้าร้าน",
+          );
+          return;
+        }
+
+        isTaskCompletedOrCancelled = true;
+        clearHeartbeat(); // ⬅️ หยุดส่ง Heartbeat ทันทีเมื่อบันทึกงานสำเร็จ
+
+        alert("บันทึกข้อมูลการจัดงานและหลักฐานเรียบร้อยแล้ว!");
         window.location.href = "order.html";
+      }
+
+      // กรณีผู้ใช้เผลอปิดแท็บ, ปิดหน้าต่าง, หรือรีเฟรชโดยไม่ได้ตั้งใจ
+      window.addEventListener("beforeunload", function (e) {
+        if (isTaskCompletedOrCancelled) return; // หากกดบันทึกหรือยกเลิกเรียบร้อยแล้ว ไม่ต้องแจ้งเตือน
+        e.preventDefault();
+        e.returnValue = "";
+      });
+
+      // ส่งสัญญาณบอกเซิร์ฟเวอร์ทุก 15 วินาที ว่าฉันยังทำงานอยู่นะ!
+      const heartbeatInterval = setInterval(() => {
+        if (orderId && !isTaskCompletedOrCancelled) {
+          // ใช้ Blob เพื่อกำหนด Content-Type เป็น application/json ให้ถูกต้องสำหรับ sendBeacon
+          const data = JSON.stringify({ order_id: orderId });
+          const blob = new Blob([data], { type: "application/json" });
+          navigator.sendBeacon("/api/orders/heartbeat", blob);
+        }
+      }, 15000);
+
+      // เมื่อกดบันทึกหรือยกเลิกงาน ให้เคลียร์ตัวจับเวลานี้ทิ้ง
+      function clearHeartbeat() {
+        clearInterval(heartbeatInterval);
       }
 
       window.addEventListener("DOMContentLoaded", loadFulfillData);
