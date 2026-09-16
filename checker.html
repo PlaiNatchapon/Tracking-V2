@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ระบบตรวจสอบและปล่อยรถ - Checker Management</title>
+    <!-- โหลดไลบรารี Socket.io และตัวเช็กสิทธิ์ -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="js/auth-guard.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/order.css" />
+  </head>
+  <body>
+    <div class="sheet">
+      <div class="letterhead">
+        <div class="mark">
+          <div class="mark-icon">
+            <svg
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+              />
+            </svg>
+          </div>
+          <div class="mark-text">
+            <div class="eyebrow">Checker Verification System</div>
+          </div>
+        </div>
+        <button
+          class="btn-logout"
+          onclick="toggleHiddenOrdersModal()"
+          style="background-color: var(--primary); margin-right: 10px"
+        >
+          ออเดอร์ที่ซ่อนไว้ (<span id="hidden-count">0</span>)
+        </button>
+        <!-- Modal สำหรับกู้คืนออเดอร์ที่ซ่อน -->
+        <div
+          id="hiddenOrdersModal"
+          style="
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+          "
+        >
+          <div
+            style="
+              background: white;
+              padding: 20px;
+              border-radius: 8px;
+              width: 400px;
+              max-height: 80vh;
+              overflow-y: auto;
+            "
+          >
+            <h3>ออเดอร์ที่กำลังตรวจสอบ / ซ่อนไว้</h3>
+            <div id="hidden-orders-list" style="margin: 15px 0"></div>
+            <button
+              class="btn"
+              onclick="toggleHiddenOrdersModal()"
+              style="background: #ccc; width: 100%"
+            >
+              ปิด
+            </button>
+          </div>
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">ออกจากระบบ</button>
+      </div>
+
+      <div class="container">
+        <h2>รายการออเดอร์รอตรวจสอบ & ปล่อยรถ</h2>
+        <div class="section-label">Waiting for Check & Dispatch</div>
+
+        <div id="order-list">
+          <!-- ข้อมูลจากฐานข้อมูลจะถูกดึงมาแสดงผลแบบไดนามิกที่นี่ -->
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -73,6 +73,8 @@ document.getElementById("loginForm").addEventListener("submit", function (e) {
           window.location.href = "dashboard.html";
         } else if (result.department === "warehouse") {
           window.location.href = "order.html";
+        } else if (result.department === "checker") {
+          window.location.href = "checker.html";
         } else {
           window.location.href = "index.html"; // หน้าค่าเริ่มต้นถ้าไม่ตรงกับเงื่อนไข
         }
