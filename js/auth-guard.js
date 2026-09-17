@@ -16,8 +16,10 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 
   // ตรวจสอบสถานะปกติผ่าน API รอบแรกตอนเปิดหน้าเว็บ
+  // ✅ แก้ไขเป็นแบบนี้ (ใช้ dynamic host แทนการใส่ไอพีตายตัว)
   try {
-    const response = await fetch("http://192.168.1.35:3000/api/verify-token", {
+    const apiUrl = `http://${window.location.hostname}:3000/api/verify-token`;
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, username }),
@@ -28,7 +30,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       redirectToLogin();
     }
   } catch (error) {
-    console.error("Connection error");
+    console.error("Connection error", error);
   }
 });
 
