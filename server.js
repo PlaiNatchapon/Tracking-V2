@@ -34,14 +34,12 @@ io.on("connection", (socket) => {
   });
 });
 
-// ⬅️ 5. ส่ง io และ userSockets เข้าไปใน app เพื่อให้ไฟล์ Blogin.js เรียกใช้งานได้
+// ⬅️ 5. ส่ง io และ userSockets เข้าไปใน app เพื่อให้ไฟล์อื่นเรียกใช้งานได้
 app.set("io", io);
 app.set("userSockets", userSockets);
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
-
-app.use(express.json());
 app.use(cors());
 
 // อนุญาตให้เซิร์ฟเวอร์อ่านไฟล์หน้าบ้าน (HTML, CSS, JS) ในโปรเจกต์
@@ -55,7 +53,7 @@ const pool = new Pool({
   port: 5432,
 });
 
-// เรียกใช้ API จากไฟล์แยก
+// เรียกใช้ API จากไฟล์แยกต่างๆ
 const authRoutes = require("./backend/Blogin")(pool);
 app.use("/api", authRoutes);
 
@@ -65,12 +63,11 @@ app.use("/api/products", salesRoutes);
 const orderRoutes = require("./backend/Border")(pool);
 app.use("/api/orders", orderRoutes);
 
-// เรียกใช้ API จัดการงาน Fulfill จากไฟล์แยก
 const fulfillRoutes = require("./backend/Bfulfill")(pool);
 app.use("/api/orders", fulfillRoutes);
 
-// นำเข้าไฟล์หลังบ้านของ Checker (Bchecker.js) และส่งค่า pool เข้าไป
-const checkerRoutes = require("./backend/Bchecker")(pool);
+// ⬅️ จุดที่แก้ไข: นำเข้า Checker พร้อมส่งทั้ง pool และ io เข้าไปใช้งาน
+const checkerRoutes = require("./backend/Bchecker")(pool, io);
 app.use("/api/checker", checkerRoutes);
 
 // กำหนดให้เปิดเข้าหน้า login.html ทันทีเมื่อเข้าเว็บพอร์ต 3000

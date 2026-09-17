@@ -25,6 +25,7 @@ let heartbeatInterval = null;
 // ฟังก์ชันดึงข้อมูลออเดอร์สำหรับ Checker
 async function fetchCheckerOrders() {
   const orderListContainer = document.getElementById("order-list");
+  if (!orderListContainer) return;
   orderListContainer.innerHTML = "<p style='text-align:center; color:#666;'>กำลังโหลดข้อมูลออเดอร์...</p>";
 
   try {
@@ -43,6 +44,7 @@ async function fetchCheckerOrders() {
 // ฟังก์ชันสร้าง HTML แสดงรายการออเดอร์ (เช็คปุ่มล็อคสถานะ)
 function renderCheckerOrders(orders) {
   const orderListContainer = document.getElementById("order-list");
+  if (!orderListContainer) return;
   orderListContainer.innerHTML = "";
 
   if (orders.length === 0) {
@@ -158,15 +160,12 @@ async function tryOpenDispatchModal(orderId, order) {
     const result = await response.json();
     if (!response.ok) {
       alert("❌ " + (result.error || "ไม่สามารถล็อคออเดอร์นี้ได้"));
-      fetchCheckerOrders(); // รีเฟรชหน้าจอเพื่ออัปเดตสถานะล่าสุด
+      fetchCheckerOrders(); 
       return;
     }
 
-    // ล็อคสำเร็จ เก็บไอดีออเดอร์ที่ถือสิทธิ์ไว้ และเริ่มรัน Heartbeat ทุกๆ 1 นาที
     currentLockedOrderId = orderId;
     startHeartbeat(orderId, currentFullName);
-
-    // เปิด Modal ปล่อยรถปกติ
     openDispatchModal(order);
   } catch (err) {
     console.error("Error locking order:", err);
@@ -189,7 +188,7 @@ function startHeartbeat(orderId, checkerName) {
     } catch (err) {
       console.warn("Heartbeat failed:", err);
     }
-  }, 60000); // ทุก 1 นาที
+  }, 60000);
 }
 
 // หยุดระบบ Heartbeat
@@ -235,6 +234,7 @@ function openDispatchModal(order) {
 
   const currentFullName = localStorage.getItem("fullname") || localStorage.getItem("name") || localStorage.getItem("username") || order.fulfiller_name || "ไม่ระบุชื่อ";
   const currentUserDept = localStorage.getItem("department") || order.fulfiller_dept || order.department || "Checker / Warehouse";
+  const vehicleCode = order.vehicle_selection || "ยังไม่ระบุรหัสรถ";
 
   const now = new Date();
   const currentTime = now.toTimeString().substring(0, 5);
@@ -249,12 +249,13 @@ function openDispatchModal(order) {
       <div style="font-size: 14px; color: #374151; line-height: 1.6; margin: 15px 0;">
         <div style="background: #f9fafb; padding: 12px 16px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 16px;">
           <p style="margin: 4px 0;"><strong>ชื่อ-นามสกุลผู้ตรวจสอบ:</strong> <span style="color: #111827; font-weight: 600;">${currentFullName}</span></p>
-          <p style="margin: 4px 0;"><strong>แผนก:</strong> <span style="color: #4b5563; font-weight: 500;">${currentUserDept}</span></p>
+          <p style="margin: 4px 0;"><strong>แผนก:</strong> <span id="departmentInput" style="color: #4b5563; font-weight: 500;" data-value="${currentUserDept}">${currentUserDept}</span></p>
+          <p style="margin: 4px 0;"><strong>รหัสรถ:</strong> <span id="vehicleSelect" style="color: #2563eb; font-weight: 600;" data-value="${vehicleCode}">${vehicleCode}</span></p>
         </div>
 
         <div style="margin-bottom: 16px;">
           <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 13px;">เวลาออกจากร้าน</label>
-          <input type="time" id="departureTime" value="${currentTime}" style="width: 100%; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; background: #fff;">
+          <input type="time" id="departureTimeInput" value="${currentTime}" style="width: 100%; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; background: #fff;">
         </div>
 
         <!-- ช่องเลือกรูปภาพสินค้าบนรถ -->
@@ -276,8 +277,8 @@ function openDispatchModal(order) {
         <div style="margin-bottom: 16px;">
           <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 13px;">รูปบิลปล่อยรถ</label>
           <div style="border: 1px solid #d1d5db; border-radius: 6px; padding: 14px; background: #fafafa;">
-            <input type="file" id="dispatchBillPhoto" accept="image/*" style="display: none;" onchange="previewBillPhoto(this)">
-            <label for="dispatchBillPhoto" style="display: inline-flex; align-items: center; gap: 6px; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+            <input type="file" id="dispatchBillInput" accept="image/*" style="display: none;" onchange="previewBillPhoto(this)">
+            <label for="dispatchBillInput" style="display: inline-flex; align-items: center; gap: 6px; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
               <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
               เลือกรูปบิล
             </label>
@@ -286,13 +287,19 @@ function openDispatchModal(order) {
             <div id="dispatchBillPreview" style="margin-top: 10px;"></div>
           </div>
         </div>
+
+        <!-- เพิ่มช่องหมายเหตุเพิ่มเติมถ้าจำเป็น -->
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 13px;">หมายเหตุเพิ่มเติม (ถ้ามี)</label>
+          <input type="text" id="workCommentInput" placeholder="ระบุหมายเหตุ..." style="width: 100%; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; background: #fff;">
+        </div>
       </div>
 
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
         <button onclick="handleCancelDispatch()" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px;">
           ยกเลิก
         </button>
-        <button onclick="submitDispatchOrder(${order.id})" style="background: #10b981; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px;">
+        <button onclick="submitDispatchOrder(event)" style="background: #10b981; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px;">
           บันทึกการปล่อยรถ
         </button>
       </div>
@@ -300,17 +307,8 @@ function openDispatchModal(order) {
   `;
   modalBg.style.display = "flex";
 }
-
 // ฟังก์ชันสำหรับกดยกเลิกใน Modal ปล่อยรถ (ปลดล็อคทันทีและปิดหน้าต่าง)
 async function handleCancelDispatch() {
-  // สั่งปลดล็อคที่ Backend ทันที
-  await unlockCurrentOrder();
-  // ปิด Modal
-  const modal = document.getElementById("dispatchModal");
-  if (modal) modal.remove();
-}
-// ฟังก์ชันปิด Modal และปลดล็อค
-async function closeDispatchModal() {
   await unlockCurrentOrder();
   const modal = document.getElementById("dispatchModal");
   if (modal) modal.remove();
@@ -433,59 +431,102 @@ function openImageLightbox(imageSrc) {
   lightbox.style.display = "flex";
 }
 
-// ฟังก์ชันส่งข้อมูลบันทึกการปล่อยรถไปยัง Backend (บันทึกเสร็จจะปลดล็อคออเดอร์นั้นอัตโนมัติ)
-async function submitDispatchOrder(orderId) {
-  const departureTime = document.getElementById("departureTime").value;
-  const dispatchBillInput = document.getElementById("dispatchBillPhoto");
+// ฟังก์ชันสำหรับบันทึกการตรวจสอบและปล่อยรถ
+async function submitDispatchOrder(event) {
+  if (event && typeof event.preventDefault === "function") {
+    event.preventDefault();
+  }
 
-  if (!departureTime) {
-    alert("กรุณาระบุเวลาออกจากร้าน");
+  // 1. ตรวจสอบว่ามีรหัสออเดอร์ที่กำลังล็อคอยู่ไหม
+  if (!currentLockedOrderId) {
+    alert("❌ ไม่พบรหัสออเดอร์ที่กำลังตรวจสอบ กรุณาลองใหม่อีกครั้ง");
     return;
   }
 
+  // 2. ดึงชื่อผู้ตรวจสอบจาก LocalStorage
+  const checkerName = localStorage.getItem("fullname") || 
+                      localStorage.getItem("name") || 
+                      localStorage.getItem("username") || "ไม่ระบุชื่อ";
+
+  // 3. ดึงค่าจากฟอร์มใน Modal
+  const departmentEl = document.getElementById("departmentInput");
+  const department = departmentEl?.value || departmentEl?.getAttribute("data-value") || "Checker";
+
+  const departureTime = document.getElementById("departureTimeInput")?.value || "";
+
+  const vehicleEl = document.getElementById("vehicleSelect");
+  const vehicleSelection = vehicleEl?.value || vehicleEl?.getAttribute("data-value") || "";
+
+  const workComment = document.getElementById("workCommentInput")?.value || "";
+
+  // 4. เตรียม FormData สำหรับส่งไฟล์และข้อมูล
   const formData = new FormData();
-  formData.append("order_id", orderId);
+  formData.append("order_id", currentLockedOrderId);
+  formData.append("checker_name", checkerName);
+  formData.append("department", department);
   formData.append("departure_time", departureTime);
+  formData.append("vehicle_selection", vehicleSelection);
+  formData.append("work_comment", workComment);
 
-  accumulatedGoodsFiles.forEach((file) => {
-    formData.append("goods_photos", file);
-  });
+  // แนบรูปสินค้าหลายรูปจากตัวแปรสะสม accumulatedGoodsFiles
+  if (typeof accumulatedGoodsFiles !== "undefined" && accumulatedGoodsFiles.length > 0) {
+    accumulatedGoodsFiles.forEach(file => {
+      formData.append("goods_photos", file);
+    });
+  }
 
-  if (dispatchBillInput.files[0]) {
-    formData.append("dispatch_bill", dispatchBillInput.files[0]);
+  // แนบรูปบิลปล่อยรถ
+  const billInput = document.getElementById("dispatchBillInput");
+  if (billInput && billInput.files[0]) {
+    formData.append("dispatch_bill", billInput.files[0]);
   }
 
   try {
     const apiUrl = `http://${window.location.hostname}:3000/api/checker/dispatch`;
+    
     const response = await fetch(apiUrl, {
       method: "POST",
-      body: formData
+      body: formData 
     });
 
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      throw new Error("เซิร์ฟเวอร์ขัดข้องชั่วคราว (Internal Server Error 500)");
+    }
+
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
 
-    // บันทึกสำเร็จ หยุด Heartbeat และเคลียร์ตัวแปรล็อค
-    stopHeartbeat();
-    currentLockedOrderId = null;
+    if (response.ok && result.success) {
+      alert("✅ บันทึกข้อมูลการตรวจสอบและปล่อยรถสำเร็จ!");
+      
+      // ปิด Modal และเคลียร์สถานะ
+      const modal = document.getElementById("dispatchModal");
+      if (modal) modal.remove();
 
-    alert("บันทึกข้อมูลและปล่อยรถสำเร็จ");
-    const modal = document.getElementById("dispatchModal");
-    if (modal) modal.remove();
-    fetchCheckerOrders();
+      if (typeof stopHeartbeat === "function") stopHeartbeat();
+      
+      // เก็บตัว ID ไว้ชั่วคราวก่อนเคลียร์ เพื่อใช้กรองซ่อนออกจากหน้าจอทันที (ถ้าต้องการความเร็วสูงสุด)
+      currentLockedOrderId = null;
+      accumulatedGoodsFiles = [];
+      
+      // 🔄 โหลดรายการออเดอร์ใหม่ทันที ออเดอร์ที่ถูกปล่อยรถจะหายไปจากหน้าจออัตโนมัติ
+      if (typeof fetchCheckerOrders === "function") {
+        fetchCheckerOrders();
+      }
+    } else {
+      alert("❌ บันทึกไม่สำเร็จ: " + (result.error || "เกิดข้อผิดพลาด"));
+    }
   } catch (err) {
     console.error("Error submitting dispatch:", err);
-    alert("ไม่สามารถบันทึกได้: " + err.message);
+    alert("เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message);
   }
 }
-
 // ดักจับกรณีผู้ใช้ปิดแท็บหรือปิดหน้าเว็บกะทันหัน เพื่อปลดล็อคคืนระบบ
 window.addEventListener("beforeunload", () => {
   if (currentLockedOrderId) {
     const currentFullName = localStorage.getItem("fullname") || localStorage.getItem("name") || localStorage.getItem("username") || "ไม่ระบุชื่อ";
     const apiUrl = `http://${window.location.hostname}:3000/api/checker/orders/${currentLockedOrderId}/unlock`;
     
-    // ใช้ sendBeacon เพื่อส่ง Request ออกไปแม้ว่าหน้าต่างกำลังจะปิด
     navigator.sendBeacon(apiUrl, JSON.stringify({ checkerName: currentFullName }));
   }
 });
