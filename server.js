@@ -69,6 +69,10 @@ app.use("/api/orders", orderRoutes);
 const fulfillRoutes = require("./backend/Bfulfill")(pool);
 app.use("/api/orders", fulfillRoutes);
 
+// นำเข้าไฟล์หลังบ้านของ Checker (Bchecker.js) และส่งค่า pool เข้าไป
+const checkerRoutes = require("./backend/Bchecker")(pool);
+app.use("/api/checker", checkerRoutes);
+
 // กำหนดให้เปิดเข้าหน้า login.html ทันทีเมื่อเข้าเว็บพอร์ต 3000
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "login.html"));

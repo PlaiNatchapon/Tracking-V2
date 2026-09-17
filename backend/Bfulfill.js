@@ -96,40 +96,44 @@ module.exports = function (pool) {
   }, 30000);
 
   // API สำหรับบันทึกข้อมูล Fulfillment (รองรับ packing_photos แบบ text[])
-  router.put(
-    "/fulfillment/:id",
-    upload.fields([
-      { name: "packing_photos", maxCount: 10 },
-      { name: "payment_slip", maxCount: 1 },
-    ]),
-    async (req, res) => {
-      const orderId = req.params.id;
-      const { vehicle_selection, work_comment, status } = req.body;
+ // API สำหรับบันทึกข้อมูล Fulfillment (ปรับปรุงให้บันทึกตาราง order_fulfillments ด้วย)
+router.put(
+  "/fulfillment/:id",
+  upload.fields([
+    { name: "packing_photos", maxCount: 10 },
+    { name: "payment_slip", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    const orderId = req.params.id;
+    const { vehicle_selection, work_comment, status, fullname, department } = req.body;
 
-      // 1. ดึงไฟล์ที่อัปโหลด
-      const packingPhotosFiles =
-        req.files && req.files["packing_photos"]
-          ? req.files["packing_photos"]
-          : [];
-      const paymentSlipFile =
-        req.files && req.files["payment_slip"]
-          ? req.files["payment_slip"][0]
-          : null;
-
-      // 2. แปลง Path ของไฟล์
-      const paymentSlipPath = paymentSlipFile
-        ? `/uploads/${paymentSlipFile.filename}`
+    // 1. ดึงไฟล์ที่อัปโหลด
+    const packingPhotosFiles =
+      req.files && req.files["packing_photos"]
+        ? req.files["packing_photos"]
+        : [];
+    const paymentSlipFile =
+      req.files && req.files["payment_slip"]
+        ? req.files["payment_slip"][0]
         : null;
 
-      // ทำเป็นอาเรย์ของพาธรูปภาพ (เพื่อให้ตรงกับชนิด text[] ในฐานข้อมูล PostgreSQL)
-      const packingPhotosPaths =
-        packingPhotosFiles.length > 0
-          ? packingPhotosFiles.map((file) => `/uploads/${file.filename}`)
-          : null;
+    // 2. แปลง Path ของไฟล์
+    const paymentSlipPath = paymentSlipFile
+      ? `/uploads/${paymentSlipFile.filename}`
+      : null;
 
-      try {
-        // 3. คำสั่ง SQL
-        const query = `
+    const packingPhotosPaths =
+      packingPhotosFiles.length > 0
+        ? packingPhotosFiles.map((file) => `/uploads/${file.filename}`)
+        : null;
+
+    // เริ่ม Transaction เพื่อความปลอดภัยของข้อมูลทั้งสองตาราง
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // 3. อัปเดตข้อมูลลงตาราง orders เหมือนเดิม
+      const updateOrderQuery = `
         UPDATE orders 
         SET 
           vehicle_selection = COALESCE($1, vehicle_selection),
@@ -140,25 +144,47 @@ module.exports = function (pool) {
         WHERE id = $6
       `;
 
-        await pool.query(query, [
-          vehicle_selection || null,
-          work_comment || null,
-          status || "completed",
-          paymentSlipPath,
-          packingPhotosPaths, // ส่งเป็น Array ตรงๆ เข้าไปได้เลยครับสำหรับคอลัมน์ text[]
-          orderId,
-        ]);
+      await client.query(updateOrderQuery, [
+        vehicle_selection || null,
+        work_comment || null,
+        status || "completed",
+        paymentSlipPath,
+        packingPhotosPaths,
+        orderId,
+      ]);
 
-        console.log(`[Backend] บันทึกข้อมูลออเดอร์ #${orderId} สำเร็จ`);
-        res.json({ message: "บันทึกข้อมูลการจัดสินค้าสำเร็จ" });
-      } catch (err) {
-        console.error("Error updating fulfillment:", err);
-        res.status(500).json({
-          error: "ไม่สามารถบันทึกข้อมูลการจัดสินค้าได้: " + err.message,
-        });
-      }
-    },
-  );
+      // 4. [เพิ่มใหม่] บันทึกหรืออัปเดตชื่อและแผนกลงในตาราง order_fulfillments
+      const fulfillmentQuery = `
+        INSERT INTO order_fulfillments (order_id, fullname, department, created_at)
+        VALUES ($1, $2, $3, NOW())
+        ON CONFLICT (order_id) 
+        DO UPDATE SET 
+          fullname = EXCLUDED.fullname,
+          department = EXCLUDED.department,
+          created_at = NOW();
+      `;
+
+      await client.query(fulfillmentQuery, [
+        orderId,
+        fullname || null,
+        department || null,
+      ]);
+
+      await client.query("COMMIT");
+
+      console.log(`[Backend] บันทึกข้อมูลออเดอร์ #${orderId} และตาราง fulfillment สำเร็จ`);
+      res.json({ message: "บันทึกข้อมูลการจัดสินค้าสำเร็จ" });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      console.error("Error updating fulfillment & fulfillments table:", err);
+      res.status(500).json({
+        error: "ไม่สามารถบันทึกข้อมูลการจัดสินค้าได้: " + err.message,
+      });
+    } finally {
+      client.release();
+    }
+  },
+);
 
   return router;
 };

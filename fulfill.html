@@ -47,6 +47,21 @@
         </div>
       </div>
 
+      <!-- [เพิ่มใหม่] ช่องแสดงชื่อ-นามสกุล และแผนกของผู้ปฏิบัติงานปัจจุบัน -->
+      <div class="section-box" style="background-color: var(--surface-subtle, #f8f9fa); padding: 12px 16px; margin-bottom: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-user-tie" style="color: var(--brand-2); font-size: 18px;"></i>
+          <div>
+            <div style="font-size: 12px; color: var(--ink-faint);">ผู้ปฏิบัติงาน (Fulfiller)</div>
+            <div style="font-weight: 600; font-size: 14px;" id="current-fulfiller-name">กำลังโหลดชื่อ...</div>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 12px; color: var(--ink-faint);">แผนก</div>
+          <div style="font-weight: 500; font-size: 13px; color: var(--brand);" id="current-fulfiller-dept">-</div>
+        </div>
+      </div>
+
       <!-- เอกสารแนบ -->
       <div class="section-box">
         <div class="section-title">

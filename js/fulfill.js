@@ -6,6 +6,40 @@ let uploadedPackingPhotos = [];
 let uploadedPaymentSlip = null;
 let isTaskCompletedOrCancelled = false;
 
+
+
+
+// ตัวอย่างโค้ดที่แก้ไขให้ดึงชื่อและแผนกได้อย่างแม่นยำขึ้น
+document.addEventListener("DOMContentLoaded", () => {
+  // 1. ดึงข้อมูลผู้ใช้จาก localStorage (รองรับหลากหลายรูปแบบคีย์ที่ระบบอื่นชอบใช้)
+  let userFullName = "ไม่ระบุชื่อ";
+  let userDept = "Warehouse";
+
+  // เช็คจากก้อน JSON "user" เดิม
+  const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
+  if (loggedInUser.fullname) userFullName = loggedInUser.fullname;
+  else if (loggedInUser.name) userFullName = loggedInUser.name;
+  else if (loggedInUser.username) userFullName = loggedInUser.username;
+
+  if (loggedInUser.department) userDept = loggedInUser.department;
+
+  // เผื่อระบบของคุณเก็บบันทึกแยก key เดี่ยวๆ (เช่น localStorage.getItem('name'))
+  const singleName = localStorage.getItem("name") || localStorage.getItem("fullname") || localStorage.getItem("username");
+  const singleDept = localStorage.getItem("department") || localStorage.getItem("dept");
+
+  if (singleName) userFullName = singleName;
+  if (singleDept) userDept = singleDept;
+
+  // 2. นำไปแสดงผลลงใน HTML ที่เราเพิ่งสร้างเพิ่ม
+  const nameEl = document.getElementById("current-fulfiller-name");
+  const deptEl = document.getElementById("current-fulfiller-dept");
+
+  if (nameEl) nameEl.innerText = userFullName;
+  if (deptEl) deptEl.innerText = userDept;
+
+  // 3. เรียกใช้งานโหลดข้อมูลออเดอร์ต่อทันที
+  loadFulfillData();
+});
 async function loadFulfillData() {
   if (!orderId) {
     alert("ไม่พบรหัสออเดอร์");
@@ -228,6 +262,7 @@ async function cancelWorkflow() {
 }
 
 // 2. ฟังก์ชันบันทึกงานตัวจริง (รวมการเช็ก checklist, ยานพาหนะ และส่ง API เรียบร้อย)
+// ค้นหาฟังก์ชัน saveWorkflow() เดิม แล้วแทนที่ด้วยชุดนี้ครับ
 async function saveWorkflow() {
   if (!orderId) {
     alert("ไม่พบรหัสออเดอร์สำหรับบันทึกข้อมูล");
@@ -261,14 +296,21 @@ async function saveWorkflow() {
 
   const workComment = document.getElementById("work-comment").value;
 
+  // [เพิ่มใหม่] ดึงข้อมูลชื่อและแผนกจากหน้าจอที่แสดงอยู่ตอนนี้
+  const currentFullname = document.getElementById("current-fulfiller-name")?.innerText || "";
+  const currentDept = document.getElementById("current-fulfiller-dept")?.innerText || "";
+
   try {
     const formData = new FormData();
     formData.append("vehicle_selection", vehicleSelection);
     formData.append("work_comment", workComment);
     formData.append("status", "completed");
+    
+    // [เพิ่มใหม่] แนบชื่อและแผนกส่งไปกับ Request
+    formData.append("fullname", currentFullname !== "กำลังโหลดชื่อ..." ? currentFullname : "");
+    formData.append("department", currentDept !== "-" ? currentDept : "");
 
-    // ถ้ามีรูปถ่ายการแพ็คสินค้า สามารถแนบลง FormData ตรงนี้ได้
-    uploadedPackingPhotos.forEach((photo, idx) => {
+    uploadedPackingPhotos.forEach((photo) => {
       formData.append("packing_photos", photo.file);
     });
 
@@ -295,7 +337,6 @@ async function saveWorkflow() {
     alert("เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์");
   }
 }
-
 window.addEventListener("beforeunload", function (e) {
   if (isTaskCompletedOrCancelled) return;
   e.preventDefault();
