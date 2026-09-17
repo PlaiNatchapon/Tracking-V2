@@ -17,11 +17,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// ฟังก์ชันดึงข้อมูลออเดอร์สำหรับ Checker (ใช้ Dynamic Host ป้องกันเน็ตเวิร์ก timeout)
+// ตัวแปรสำหรับเก็บไฟล์ภาพสินค้าที่ผู้ใช้งานเลือกสะสมไว้
+let accumulatedGoodsFiles = [];
+
+// ฟังก์ชันดึงข้อมูลออเดอร์สำหรับ Checker
 async function fetchCheckerOrders() {
   const orderListContainer = document.getElementById("order-list");
-  orderListContainer.innerHTML =
-    "<p style='text-align:center; color:#666;'>กำลังโหลดข้อมูลออเดอร์...</p>";
+  orderListContainer.innerHTML = "<p style='text-align:center; color:#666;'>กำลังโหลดข้อมูลออเดอร์...</p>";
 
   try {
     const apiUrl = `http://${window.location.hostname}:3000/api/checker/orders`;
@@ -36,108 +38,330 @@ async function fetchCheckerOrders() {
   }
 }
 
-// ฟังก์ชันสร้าง HTML แสดงรายการออเดอร์
+// ฟังก์ชันสร้าง HTML แสดงรายการออเดอร์ (ใช้ไอคอน SVG โมเดิร์น)
 function renderCheckerOrders(orders) {
   const orderListContainer = document.getElementById("order-list");
   orderListContainer.innerHTML = "";
 
   if (orders.length === 0) {
-    orderListContainer.innerHTML =
-      "<p style='text-align:center; color:#888;'>ไม่มีออเดอร์ในระบบตอนนี้</p>";
+    orderListContainer.innerHTML = "<p style='text-align:center; color:#888;'>ไม่มีออเดอร์ในระบบตอนนี้</p>";
     return;
   }
 
   orders.forEach((order) => {
     const card = document.createElement("div");
     card.className = "order-card";
-    card.style.cssText =
-      "background: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center;";
+    card.style.cssText = "background: #fff; border: 1px solid #e5e7eb; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;";
 
     let vehicleCode = order.vehicle_selection || "ยังไม่ระบุรหัสรถ";
-
-    let workerName =
-      order.fulfiller_name ||
-      order.employee_name ||
-      order.employee_id ||
-      "ยังไม่มีผู้ดำเนินการ";
+    let workerName = order.fulfiller_name || order.employee_name || order.employee_id || "ยังไม่มีผู้ดำเนินการ";
     let workerDept = order.fulfiller_dept || order.department || "Warehouse";
 
     card.innerHTML = `
-            <div>
-                <h3 style="margin: 0 0 8px 0; color: #333;">ออเดอร์ #${order.id}</h3>
-                <div style="margin: 0 0 6px 0; font-size: 14px; color: #4b5563; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span><strong>ผู้ทำรายการ:</strong> <span style="color: #111; font-weight: 500;">${workerName}</span></span>
-                    <span style="color: #cbd5e1;">|</span>
-                    <span><strong>แผนก:</strong> <span style="background: #f3f4f6; padding: 2px 8px; border-radius: 4px; font-size: 13px; color: #374151;">${workerDept}</span></span>
-                </div>
-                <p style="margin: 0; font-size: 14px; color: #555;">
-                    <strong>รหัสรถ:</strong> <span style="color: #2563eb; font-weight: 600;">${vehicleCode}</span>
-                </p>
-            </div>
-            <div>
-                <button onclick='openDetailModal(${JSON.stringify(order)})' style="background: #4f46e5; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
-                    🔍 ดูรายละเอียดเชิงลึก
-                </button>
-            </div>
-        `;
+      <div>
+        <h3 style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px;">ออเดอร์ #${order.id}</h3>
+        <div style="margin: 0 0 6px 0; font-size: 14px; color: #4b5563; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span><strong>ผู้ทำรายการ:</strong> <span style="color: #111; font-weight: 500;">${workerName}</span></span>
+          <span style="color: #cbd5e1;">|</span>
+          <span><strong>แผนก:</strong> <span style="background: #f3f4f6; padding: 2px 8px; border-radius: 4px; font-size: 13px; color: #374151;">${workerDept}</span></span>
+        </div>
+        <p style="margin: 0; font-size: 14px; color: #555;">
+          <strong>รหัสรถ:</strong> <span style="color: #2563eb; font-weight: 600;">${vehicleCode}</span>
+        </p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button onclick='openDetailModal(${JSON.stringify(order)})' style="background: #4f46e5; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;">
+          <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          ดูรายละเอียด
+        </button>
+        <button onclick='openDispatchModal(${JSON.stringify(order)})' style="background: #10b981; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;">
+          <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m10 0a2 2 0 104 0"/></svg>
+          ตรวจสอบและปล่อยรถ
+        </button>
+      </div>
+    `;
 
     orderListContainer.appendChild(card);
   });
 }
 
-// ฟังก์ชันเปิด Modal แสดงรายละเอียดเชิงลึก
+// ฟังก์ชันเปิด Modal สำหรับดูรายละเอียดข้อมูลออเดอร์
 function openDetailModal(order) {
-  let modalBg = document.getElementById("orderDetailModal");
+  let modalBg = document.getElementById("detailModal");
   if (!modalBg) {
     modalBg = document.createElement("div");
-    modalBg.id = "orderDetailModal";
-    modalBg.style.cssText =
-      "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 2000;";
+    modalBg.id = "detailModal";
+    modalBg.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(3px);";
     document.body.appendChild(modalBg);
   }
 
-  let photosHtml =
-    '<p style="color:#888; font-size:13px;">ไม่มีรูปภาพสินค้าขึ้นรถ</p>';
-  if (order.packing_photos && order.packing_photos.length > 0) {
-    photosHtml = `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:5px;">
-            ${order.packing_photos.map((p) => `<img src="http://${window.location.hostname}:3000${p}" style="width:100px; height:100px; object-fit:cover; border-radius:4px; border:1px solid #ccc;">`).join("")}
-        </div>`;
-  }
-
-  let workerName =
-    order.fulfiller_name ||
-    order.employee_name ||
-    order.employee_id ||
-    "ไม่ระบุชื่อ";
-  let workerDept =
-    order.fulfiller_dept || order.department || "Warehouse / ฝ่ายคลังสินค้า";
-  let vehicleCode = order.vehicle_selection || "ยังไม่ได้ระบุ";
-  let warehouseComment = order.work_comment || "ไม่มีหมายเหตุ";
+  let vehicleCode = order.vehicle_selection || "ยังไม่ระบุรหัสรถ";
+  let workerName = order.fulfiller_name || order.employee_name || order.employee_id || "ยังไม่มีผู้ดำเนินการ";
+  let workerDept = order.fulfiller_dept || order.department || "Warehouse";
 
   modalBg.innerHTML = `
-        <div style="background: white; padding: 25px; border-radius: 8px; width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            <h3 style="margin-top: 0; color: #1f2937; border-bottom: 2px solid #f3f4f6; padding-bottom: 10px;">รายละเอียดเชิงลึก - ออเดอร์ #${order.id}</h3>
-            
-            <div style="font-size: 14px; color: #374151; line-height: 1.6; margin: 15px 0;">
-                <p style="margin: 6px 0;">
-                    <strong>ผู้ปฏิบัติงาน:</strong> <span style="color: #111; font-weight: 500;">${workerName}</span>
-                </p>
-                
-                <p style="margin: 6px 0;">
-                    <strong>แผนก (Warehouse):</strong> <span style="background: #eef2ff; color: #4f46e5; padding: 3px 10px; border-radius: 4px; font-weight: 500; display: inline-block;">${workerDept}</span>
-                </p>
-
-                <p style="margin: 6px 0;"><strong>รหัสรถ:</strong> <span style="color: #2563eb; font-weight: 600;">${vehicleCode}</span></p>
-                <p style="margin: 6px 0;"><strong>หมายเหตุจากฝ่าย warehouse:</strong> ${warehouseComment}</p>
-                <hr style="border:0; border-top:1px solid #eee; margin: 12px 0;">
-            </div>
-
-            <div style="text-align: right; margin-top: 20px;">
-                <button onclick="document.getElementById('orderDetailModal').remove()" style="background: #9ca3af; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 500;">
-                    ปิดหน้าต่าง
-                </button>
-            </div>
+    <div style="background: white; padding: 28px; border-radius: 12px; width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.15); font-family: 'Kanit', sans-serif;">
+      <h3 style="margin-top: 0; color: #111827; font-size: 18px; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+        <span>รายละเอียดออเดอร์</span>
+        <span style="font-size: 13px; font-weight: normal; color: #4f46e5; background: #eef2ff; padding: 2px 10px; border-radius: 6px;">ออเดอร์ #${order.id}</span>
+      </h3>
+      
+      <div style="font-size: 14px; color: #374151; line-height: 1.6; margin: 15px 0;">
+        <div style="background: #f9fafb; padding: 12px 16px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 16px;">
+          <p style="margin: 4px 0;"><strong>ผู้ทำรายการ:</strong> <span style="color: #111827; font-weight: 600;">${workerName}</span></p>
+          <p style="margin: 4px 0;"><strong>แผนก:</strong> <span style="color: #4b5563; font-weight: 500;">${workerDept}</span></p>
+          <p style="margin: 4px 0;"><strong>รหัสรถ:</strong> <span style="color: #2563eb; font-weight: 600;">${vehicleCode}</span></p>
         </div>
-    `;
+
+        <div style="background: #fff; padding: 10px 0;">
+          <p style="margin: 6px 0;"><strong>สถานะ:</strong> <span style="color: #059669; font-weight: 500;">รอการตรวจสอบและปล่อยรถ</span></p>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
+        <button onclick="document.getElementById('detailModal').remove()" style="background: #4f46e5; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px;">
+          ปิดหน้าต่าง
+        </button>
+      </div>
+    </div>
+  `;
   modalBg.style.display = "flex";
+}
+
+// ฟังก์ชันเปิด Modal สำหรับกรอกข้อมูลตรวจสอบและปล่อยรถ (ใช้ไอคอน SVG โมเดิร์น)
+function openDispatchModal(order) {
+  accumulatedGoodsFiles = [];
+
+  let modalBg = document.getElementById("dispatchModal");
+  if (!modalBg) {
+    modalBg = document.createElement("div");
+    modalBg.id = "dispatchModal";
+    modalBg.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(3px);";
+    document.body.appendChild(modalBg);
+  }
+
+  const currentFullName = localStorage.getItem("fullname") || localStorage.getItem("name") || localStorage.getItem("username") || order.fulfiller_name || "ไม่ระบุชื่อ";
+  const currentUserDept = localStorage.getItem("department") || order.fulfiller_dept || order.department || "Checker / Warehouse";
+
+  const now = new Date();
+  const currentTime = now.toTimeString().substring(0, 5);
+
+  modalBg.innerHTML = `
+    <div style="background: white; padding: 28px; border-radius: 12px; width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.15); font-family: 'Kanit', sans-serif;">
+      <h3 style="margin-top: 0; color: #111827; font-size: 18px; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+        <span>ตรวจสอบและปล่อยรถ</span>
+        <span style="font-size: 13px; font-weight: normal; color: #4f46e5; background: #eef2ff; padding: 2px 10px; border-radius: 6px;">ออเดอร์ #${order.id}</span>
+      </h3>
+      
+      <div style="font-size: 14px; color: #374151; line-height: 1.6; margin: 15px 0;">
+        <div style="background: #f9fafb; padding: 12px 16px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 16px;">
+          <p style="margin: 4px 0;"><strong>ชื่อ-นามสกุลผู้ตรวจสอบ:</strong> <span style="color: #111827; font-weight: 600;">${currentFullName}</span></p>
+          <p style="margin: 4px 0;"><strong>แผนก:</strong> <span style="color: #4b5563; font-weight: 500;">${currentUserDept}</span></p>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 13px;">เวลาออกจากร้าน</label>
+          <input type="time" id="departureTime" value="${currentTime}" style="width: 100%; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; background: #fff;">
+        </div>
+
+        <!-- ช่องเลือกรูปภาพสินค้าบนรถ -->
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 13px;">ภาพหลักฐานสินค้าบนรถ (เลือกเพิ่มสะสมได้หลายครั้ง)</label>
+          <div style="border: 1px solid #d1d5db; border-radius: 6px; padding: 14px; background: #fafafa;">
+            <input type="file" id="goodsPhotos" multiple accept="image/*" style="display: none;" onchange="previewGoodsPhotos(this)">
+            <label for="goodsPhotos" style="display: inline-flex; align-items: center; gap: 6px; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+              <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+              เลือกรูปภาพสินค้าเพิ่ม
+            </label>
+            <span id="goodsPhotosStatus" style="font-size: 13px; color: #6b7280; margin-left: 10px;">ยังไม่ได้เลือกไฟล์</span>
+            
+            <div id="goodsPhotosPreview" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;"></div>
+          </div>
+        </div>
+
+        <!-- ช่องเลือกรูปบิลปล่อยรถ -->
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 13px;">รูปบิลปล่อยรถ</label>
+          <div style="border: 1px solid #d1d5db; border-radius: 6px; padding: 14px; background: #fafafa;">
+            <input type="file" id="dispatchBillPhoto" accept="image/*" style="display: none;" onchange="previewBillPhoto(this)">
+            <label for="dispatchBillPhoto" style="display: inline-flex; align-items: center; gap: 6px; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+              <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              เลือกรูปบิล
+            </label>
+            <span id="dispatchBillStatus" style="font-size: 13px; color: #6b7280; margin-left: 10px;">ยังไม่ได้เลือกไฟล์</span>
+            
+            <div id="dispatchBillPreview" style="margin-top: 10px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
+        <button onclick="document.getElementById('dispatchModal').remove()" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px;">
+          ยกเลิก
+        </button>
+        <button onclick="submitDispatchOrder(${order.id})" style="background: #10b981; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px;">
+          บันทึกการปล่อยรถ
+        </button>
+      </div>
+    </div>
+  `;
+  modalBg.style.display = "flex";
+}
+
+// ฟังก์ชันพรีวิวภาพหลักฐานสินค้าบนรถแบบสะสมไฟล์ได้ พร้อมปุ่มกากบาทลบรูป
+function previewGoodsPhotos(input) {
+  if (input.files && input.files.length > 0) {
+    Array.from(input.files).forEach((file) => {
+      accumulatedGoodsFiles.push(file);
+    });
+    input.value = ""; 
+  }
+
+  const statusEl = document.getElementById("goodsPhotosStatus");
+  const previewContainer = document.getElementById("goodsPhotosPreview");
+  if (!previewContainer) return;
+  previewContainer.innerHTML = "";
+
+  if (accumulatedGoodsFiles.length > 0) {
+    if (statusEl) {
+      statusEl.textContent = `เลือกแล้ว (${accumulatedGoodsFiles.length} รูป)`;
+      statusEl.style.color = "#059669";
+      statusEl.style.fontWeight = "500";
+    }
+
+    accumulatedGoodsFiles.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const imgWrapper = document.createElement("div");
+        imgWrapper.style.cssText = "position: relative; width: 64px; height: 64px; border-radius: 6px; overflow: hidden; border: 1px solid #d1d5db; background: #fff;";
+        
+        const img = document.createElement("img");
+        img.src = e.target.result;
+        img.style.cssText = "width: 100%; height: 100%; object-fit: cover; cursor: pointer;";
+        img.title = "คลิกเพื่อดูรูปขนาดใหญ่";
+        img.onclick = () => openImageLightbox(e.target.result);
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.innerHTML = "✕";
+        removeBtn.style.cssText = "position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer;";
+        removeBtn.onclick = (event) => {
+          event.stopPropagation();
+          accumulatedGoodsFiles.splice(index, 1);
+          previewGoodsPhotos({ files: [] });
+        };
+
+        imgWrapper.appendChild(img);
+        imgWrapper.appendChild(removeBtn);
+        previewContainer.appendChild(imgWrapper);
+      };
+      reader.readAsDataURL(file);
+    });
+  } else {
+    if (statusEl) {
+      statusEl.textContent = "ยังไม่ได้เลือกไฟล์";
+      statusEl.style.color = "#6b7280";
+      statusEl.style.fontWeight = "normal";
+    }
+  }
+}
+
+// ฟังก์ชันพรีวิวรูปบิลปล่อยรถ
+function previewBillPhoto(input) {
+  const statusEl = document.getElementById("dispatchBillStatus");
+  const previewContainer = document.getElementById("dispatchBillPreview");
+  if (!previewContainer) return;
+  previewContainer.innerHTML = "";
+
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    if (statusEl) {
+      statusEl.textContent = file.name;
+      statusEl.style.color = "#059669";
+      statusEl.style.fontWeight = "500";
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const imgWrapper = document.createElement("div");
+      imgWrapper.style.cssText = "position: relative; width: 64px; height: 64px; border-radius: 6px; overflow: hidden; border: 1px solid #d1d5db; background: #fff;";
+      
+      const img = document.createElement("img");
+      img.src = e.target.result;
+      img.style.cssText = "width: 100%; height: 100%; object-fit: cover; cursor: pointer;";
+      img.title = "คลิกเพื่อดูรูปขนาดใหญ่";
+      img.onclick = () => openImageLightbox(e.target.result);
+
+      imgWrapper.appendChild(img);
+      previewContainer.appendChild(imgWrapper);
+    };
+    reader.readAsDataURL(file);
+  } else {
+    if (statusEl) {
+      statusEl.textContent = "ยังไม่ได้เลือกไฟล์";
+      statusEl.style.color = "#6b7280";
+      statusEl.style.fontWeight = "normal";
+    }
+  }
+}
+
+// ฟังก์ชันเปิด Lightbox แสดงรูปภาพขนาดใหญ่เต็มจอเมื่อผู้ใช้คลิกดูรูป
+function openImageLightbox(imageSrc) {
+  let lightbox = document.getElementById("imageLightboxModal");
+  if (!lightbox) {
+    lightbox = document.createElement("div");
+    lightbox.id = "imageLightboxModal";
+    lightbox.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 3000; cursor: pointer;";
+    lightbox.onclick = () => lightbox.remove();
+    document.body.appendChild(lightbox);
+  }
+
+  lightbox.innerHTML = `
+    <div style="position: relative; max-width: 90%; max-height: 90%;" onclick="event.stopPropagation()">
+      <img src="${imageSrc}" style="display: block; max-width: 100%; max-height: 85vh; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+      <button onclick="document.getElementById('imageLightboxModal').remove()" style="position: absolute; top: -12px; right: -12px; background: #fff; color: #111; border: none; border-radius: 50%; width: 32px; height: 32px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">✕</button>
+    </div>
+  `;
+  lightbox.style.display = "flex";
+}
+
+// ฟังก์ชันส่งข้อมูลบันทึกการปล่อยรถไปยัง Backend
+async function submitDispatchOrder(orderId) {
+  const departureTime = document.getElementById("departureTime").value;
+  const dispatchBillInput = document.getElementById("dispatchBillPhoto");
+
+  if (!departureTime) {
+    alert("กรุณาระบุเวลาออกจากร้าน");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("order_id", orderId);
+  formData.append("departure_time", departureTime);
+
+  accumulatedGoodsFiles.forEach((file) => {
+    formData.append("goods_photos", file);
+  });
+
+  if (dispatchBillInput.files[0]) {
+    formData.append("dispatch_bill", dispatchBillInput.files[0]);
+  }
+
+  try {
+    const apiUrl = `http://${window.location.hostname}:3000/api/checker/dispatch`;
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      body: formData
+    });
+
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+
+    alert("บันทึกข้อมูลและปล่อยรถสำเร็จ");
+    document.getElementById("dispatchModal").remove();
+    fetchCheckerOrders();
+  } catch (err) {
+    console.error("Error submitting dispatch:", err);
+    alert("ไม่สามารถบันทึกได้: " + err.message);
+  }
 }
