@@ -17,8 +17,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// ตัวแปรสำหรับเก็บไฟล์ภาพสินค้าที่ผู้ใช้งานเลือกสะสมไว้
+// ตัวแปรสำหรับเก็บไฟล์ภาพสินค้าที่ผู้ใช้งานเลือกสะสมไว้ และตัวแปรเก็บสถานะการล็อคปัจจุบัน
 let accumulatedGoodsFiles = [];
+let currentLockedOrderId = null;
+let heartbeatInterval = null;
 
 // ฟังก์ชันดึงข้อมูลออเดอร์สำหรับ Checker
 async function fetchCheckerOrders() {
@@ -38,7 +40,7 @@ async function fetchCheckerOrders() {
   }
 }
 
-// ฟังก์ชันสร้าง HTML แสดงรายการออเดอร์ (ใช้ไอคอน SVG โมเดิร์น)
+// ฟังก์ชันสร้าง HTML แสดงรายการออเดอร์ (เช็คปุ่มล็อคสถานะ)
 function renderCheckerOrders(orders) {
   const orderListContainer = document.getElementById("order-list");
   orderListContainer.innerHTML = "";
@@ -48,6 +50,8 @@ function renderCheckerOrders(orders) {
     return;
   }
 
+  const currentFullName = localStorage.getItem("fullname") || localStorage.getItem("name") || localStorage.getItem("username") || "ไม่ระบุชื่อ";
+
   orders.forEach((order) => {
     const card = document.createElement("div");
     card.className = "order-card";
@@ -56,6 +60,16 @@ function renderCheckerOrders(orders) {
     let vehicleCode = order.vehicle_selection || "ยังไม่ระบุรหัสรถ";
     let workerName = order.fulfiller_name || order.employee_name || order.employee_id || "ยังไม่มีผู้ดำเนินการ";
     let workerDept = order.fulfiller_dept || order.department || "Warehouse";
+
+    // ตรวจสอบว่าออเดอร์นี้ถูกคนอื่นล็อคอยู่หรือไม่ (และยังไม่หมดอายุ 2 นาที)
+    let isLockedByOther = false;
+    if (order.locked_by && order.locked_by !== currentFullName && order.locked_at) {
+      const lockTime = new Date(order.locked_at);
+      const now = new Date();
+      if ((now - lockTime) / 1000 / 60 < 2) {
+        isLockedByOther = true;
+      }
+    }
 
     card.innerHTML = `
       <div>
@@ -67,6 +81,7 @@ function renderCheckerOrders(orders) {
         </div>
         <p style="margin: 0; font-size: 14px; color: #555;">
           <strong>รหัสรถ:</strong> <span style="color: #2563eb; font-weight: 600;">${vehicleCode}</span>
+          ${isLockedByOther ? `<span style="margin-left: 10px; color: #dc2626; font-size: 13px; background: #fee2e2; padding: 2px 8px; border-radius: 4px;">กำลังถูกตรวจสอบโดย ${order.locked_by}</span>` : ''}
         </p>
       </div>
       <div style="display: flex; gap: 8px;">
@@ -74,9 +89,9 @@ function renderCheckerOrders(orders) {
           <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
           ดูรายละเอียด
         </button>
-        <button onclick='openDispatchModal(${JSON.stringify(order)})' style="background: #10b981; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;">
+        <button onclick='tryOpenDispatchModal(${order.id}, ${JSON.stringify(order)})' style="background: ${isLockedByOther ? '#9ca3af' : '#10b981'}; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: ${isLockedByOther ? 'not-allowed' : 'pointer'}; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;" ${isLockedByOther ? 'disabled' : ''}>
           <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m10 0a2 2 0 104 0"/></svg>
-          ตรวจสอบและปล่อยรถ
+          ${isLockedByOther ? 'กำลังถูกใช้งาน' : 'ตรวจสอบและปล่อยรถ'}
         </button>
       </div>
     `;
@@ -85,7 +100,7 @@ function renderCheckerOrders(orders) {
   });
 }
 
-// ฟังก์ชันเปิด Modal สำหรับดูรายละเอียดข้อมูลออเดอร์
+// ฟังก์ชันเปิด Modal ดูรายละเอียด
 function openDetailModal(order) {
   let modalBg = document.getElementById("detailModal");
   if (!modalBg) {
@@ -128,7 +143,85 @@ function openDetailModal(order) {
   modalBg.style.display = "flex";
 }
 
-// ฟังก์ชันเปิด Modal สำหรับกรอกข้อมูลตรวจสอบและปล่อยรถ (ใช้ไอคอน SVG โมเดิร์น)
+// ฟังก์ชันก่อนเปิด Modal ปล่อยรถ: ทำการขอ Lock จาก Server ก่อน
+async function tryOpenDispatchModal(orderId, order) {
+  const currentFullName = localStorage.getItem("fullname") || localStorage.getItem("name") || localStorage.getItem("username") || "ไม่ระบุชื่อ";
+
+  try {
+    const apiUrl = `http://${window.location.hostname}:3000/api/checker/orders/${orderId}/lock`;
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ checkerName: currentFullName })
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      alert("❌ " + (result.error || "ไม่สามารถล็อคออเดอร์นี้ได้"));
+      fetchCheckerOrders(); // รีเฟรชหน้าจอเพื่ออัปเดตสถานะล่าสุด
+      return;
+    }
+
+    // ล็อคสำเร็จ เก็บไอดีออเดอร์ที่ถือสิทธิ์ไว้ และเริ่มรัน Heartbeat ทุกๆ 1 นาที
+    currentLockedOrderId = orderId;
+    startHeartbeat(orderId, currentFullName);
+
+    // เปิด Modal ปล่อยรถปกติ
+    openDispatchModal(order);
+  } catch (err) {
+    console.error("Error locking order:", err);
+    alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์");
+  }
+}
+
+// เริ่มต้นระบบ Heartbeat (ยิงต่ออายุทุกๆ 60 วินาที)
+function startHeartbeat(orderId, checkerName) {
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+
+  heartbeatInterval = setInterval(async () => {
+    try {
+      const apiUrl = `http://${window.location.hostname}:3000/api/checker/orders/${orderId}/heartbeat`;
+      await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checkerName })
+      });
+    } catch (err) {
+      console.warn("Heartbeat failed:", err);
+    }
+  }, 60000); // ทุก 1 นาที
+}
+
+// หยุดระบบ Heartbeat
+function stopHeartbeat() {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+  }
+}
+
+// ฟังก์ชันปลดล็อคออเดอร์เมื่อกดยกเลิกหรือปิด Modal
+async function unlockCurrentOrder() {
+  if (!currentLockedOrderId) return;
+  const currentFullName = localStorage.getItem("fullname") || localStorage.getItem("name") || localStorage.getItem("username") || "ไม่ระบุชื่อ";
+
+  try {
+    stopHeartbeat();
+    const apiUrl = `http://${window.location.hostname}:3000/api/checker/orders/${currentLockedOrderId}/unlock`;
+    await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ checkerName: currentFullName })
+    });
+  } catch (err) {
+    console.error("Error unlocking:", err);
+  } finally {
+    currentLockedOrderId = null;
+    fetchCheckerOrders();
+  }
+}
+
+// ฟังก์ชันเปิด Modal สำหรับกรอกข้อมูลตรวจสอบและปล่อยรถ
 function openDispatchModal(order) {
   accumulatedGoodsFiles = [];
 
@@ -196,7 +289,7 @@ function openDispatchModal(order) {
       </div>
 
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
-        <button onclick="document.getElementById('dispatchModal').remove()" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px;">
+        <button onclick="handleCancelDispatch()" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px;">
           ยกเลิก
         </button>
         <button onclick="submitDispatchOrder(${order.id})" style="background: #10b981; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px;">
@@ -208,7 +301,22 @@ function openDispatchModal(order) {
   modalBg.style.display = "flex";
 }
 
-// ฟังก์ชันพรีวิวภาพหลักฐานสินค้าบนรถแบบสะสมไฟล์ได้ พร้อมปุ่มกากบาทลบรูป
+// ฟังก์ชันสำหรับกดยกเลิกใน Modal ปล่อยรถ (ปลดล็อคทันทีและปิดหน้าต่าง)
+async function handleCancelDispatch() {
+  // สั่งปลดล็อคที่ Backend ทันที
+  await unlockCurrentOrder();
+  // ปิด Modal
+  const modal = document.getElementById("dispatchModal");
+  if (modal) modal.remove();
+}
+// ฟังก์ชันปิด Modal และปลดล็อค
+async function closeDispatchModal() {
+  await unlockCurrentOrder();
+  const modal = document.getElementById("dispatchModal");
+  if (modal) modal.remove();
+}
+
+// ฟังก์ชันพรีวิวภาพหลักฐานสินค้าบนรถแบบสะสมไฟล์ได้
 function previewGoodsPhotos(input) {
   if (input.files && input.files.length > 0) {
     Array.from(input.files).forEach((file) => {
@@ -305,7 +413,7 @@ function previewBillPhoto(input) {
   }
 }
 
-// ฟังก์ชันเปิด Lightbox แสดงรูปภาพขนาดใหญ่เต็มจอเมื่อผู้ใช้คลิกดูรูป
+// ฟังก์ชันเปิด Lightbox แสดงรูปภาพขนาดใหญ่
 function openImageLightbox(imageSrc) {
   let lightbox = document.getElementById("imageLightboxModal");
   if (!lightbox) {
@@ -325,7 +433,7 @@ function openImageLightbox(imageSrc) {
   lightbox.style.display = "flex";
 }
 
-// ฟังก์ชันส่งข้อมูลบันทึกการปล่อยรถไปยัง Backend
+// ฟังก์ชันส่งข้อมูลบันทึกการปล่อยรถไปยัง Backend (บันทึกเสร็จจะปลดล็อคออเดอร์นั้นอัตโนมัติ)
 async function submitDispatchOrder(orderId) {
   const departureTime = document.getElementById("departureTime").value;
   const dispatchBillInput = document.getElementById("dispatchBillPhoto");
@@ -357,11 +465,27 @@ async function submitDispatchOrder(orderId) {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
 
+    // บันทึกสำเร็จ หยุด Heartbeat และเคลียร์ตัวแปรล็อค
+    stopHeartbeat();
+    currentLockedOrderId = null;
+
     alert("บันทึกข้อมูลและปล่อยรถสำเร็จ");
-    document.getElementById("dispatchModal").remove();
+    const modal = document.getElementById("dispatchModal");
+    if (modal) modal.remove();
     fetchCheckerOrders();
   } catch (err) {
     console.error("Error submitting dispatch:", err);
     alert("ไม่สามารถบันทึกได้: " + err.message);
   }
 }
+
+// ดักจับกรณีผู้ใช้ปิดแท็บหรือปิดหน้าเว็บกะทันหัน เพื่อปลดล็อคคืนระบบ
+window.addEventListener("beforeunload", () => {
+  if (currentLockedOrderId) {
+    const currentFullName = localStorage.getItem("fullname") || localStorage.getItem("name") || localStorage.getItem("username") || "ไม่ระบุชื่อ";
+    const apiUrl = `http://${window.location.hostname}:3000/api/checker/orders/${currentLockedOrderId}/unlock`;
+    
+    // ใช้ sendBeacon เพื่อส่ง Request ออกไปแม้ว่าหน้าต่างกำลังจะปิด
+    navigator.sendBeacon(apiUrl, JSON.stringify({ checkerName: currentFullName }));
+  }
+});
