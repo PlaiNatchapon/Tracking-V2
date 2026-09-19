@@ -70,6 +70,10 @@ app.use("/api/orders", fulfillRoutes);
 const checkerRoutes = require("./backend/Bchecker")(pool, io);
 app.use("/api/checker", checkerRoutes);
 
+// โหลดและเชื่อมต่อ Routes ของระบบจัดส่ง (Logistic)
+const logisticRoutes = require("./backend/Blogistic")(pool, io);
+app.use("/api/logistic", logisticRoutes);
+
 // กำหนดให้เปิดเข้าหน้า login.html ทันทีเมื่อเข้าเว็บพอร์ต 3000
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "login.html"));

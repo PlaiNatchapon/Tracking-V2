@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ระบบงานจัดส่งสินค้า - Logistic Delivery Management</title>
+    <!-- โหลดไลบรารี Socket.io และตัวเช็กสิทธิ์ -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="js/auth-guard.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/order.css" />
+  </head>
+  <body>
+    <div class="sheet">
+      <div class="letterhead">
+        <div class="mark">
+          <div class="mark-icon">
+            <svg
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 100 2 1 1 0 000-2zm6 0a1 1 0 100 2 1 1 0 000-2z"
+              />
+            </svg>
+          </div>
+          <div class="mark-text">
+            <div class="eyebrow">Logistic Delivery System</div>
+          </div>
+        </div>
+
+        <button class="btn-logout" onclick="handleLogout()">ออกจากระบบ</button>
+      </div>
+
+      <div class="container">
+        <h2>รายการออเดอร์รอการจัดส่งหน้างาน</h2>
+        <div class="section-label">Pending Deliveries & Field Execution</div>
+
+        <div id="order-list">
+          <!-- รายการออเดอร์จะถูกดึงมาแสดงผลที่นี่ -->
+        </div>
+      </div>
+    </div>
+
+    <!-- โหลดสคริปต์การทำงานฝั่งคนส่งของ -->
+    <script src="js/logistic.js"></script>
+  </body>
+</html>

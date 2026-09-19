@@ -2,7 +2,7 @@ const express = require("express");
 
 module.exports = function (pool) {
   const router = express.Router();
-// ดึงรายการออเดอร์ทั้งหมด พร้อมรายการสินค้า (items) ข้างใน
+  // ดึงรายการออเดอร์ทั้งหมด พร้อมรายการสินค้า (items) ข้างใน
   router.get("/", async (req, res) => {
     try {
       const query = `
@@ -46,14 +46,14 @@ module.exports = function (pool) {
     }
   });
 
-// เพิ่ม API สำหรับกดรับออเดอร์ (เปลี่ยนสถานะเป็น accepted และเริ่มนับเวลาล็อก)
+  // เพิ่ม API สำหรับกดรับออเดอร์ (เปลี่ยนสถานะเป็น accepted และเริ่มนับเวลาล็อก)
   router.put("/accept/:id", async (req, res) => {
     const orderId = req.params.id;
     try {
       // เพิ่ม locked_at = NOW() เข้าไปตรงนี้ครับ!
       await pool.query(
-        "UPDATE orders SET status = 'accepted', locked_at = NOW() WHERE id = $1", 
-        [orderId]
+        "UPDATE orders SET status = 'accepted', locked_at = NOW() WHERE id = $1",
+        [orderId],
       );
       res.json({ message: "รับออเดอร์สำเร็จ" });
     } catch (err) {
