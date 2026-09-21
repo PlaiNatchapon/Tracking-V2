@@ -6,13 +6,16 @@ module.exports = function (pool, io) {
  // ==========================================
     // 1. ดึงรายการออเดอร์ (มองจากคอลัมน์ accounting_status เป็นหลัก)
     // ==========================================
-    router.get('/orders', async (req, res) => {
+  router.get('/orders', async (req, res) => {
         try {
             const query = `
                 SELECT 
                     o.id,
                     o.status,
                     o.accounting_status,
+                    o.employee_name AS creator_name,      -- ชื่อพนักงานผู้เปิดบิล/สร้างออเดอร์
+                    o.department AS creator_department,   -- แผนกของผู้สร้างออเดอร์
+                    o.vehicle_selection,                  -- รหัสรถ / ยานพาหนะที่ใช้
                     COALESCE(dr.delivery_person_name, 'ไม่ระบุ') AS delivery_person_name,
                     COALESCE(dr.delivery_department, o.department) AS delivery_department,
                     COALESCE(o.payment_slip, dr.payment_slip, c.payment_slip) AS payment_slip,
@@ -31,7 +34,6 @@ module.exports = function (pool, io) {
             res.status(500).json({ error: "Internal Server Error" });
         }
     });
-
     // ==========================================
     // 2. ปุ่มยืนยันการชำระเงิน (อัปเดตเฉพาะคอลัมน์ accounting_status)
     // ==========================================

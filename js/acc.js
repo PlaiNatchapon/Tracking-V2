@@ -54,29 +54,45 @@ function renderOrders(ordersToRender) {
     return;
   }
 
-  container.innerHTML = ordersToRender.map(order => `
-    <div class="order-item">
-      <div class="order-details">
-        <h3>ออเดอร์ #${order.id || '-'}</h3>
-        <div class="order-meta">
-          <span><i data-lucide="user" style="width: 14px; height: 14px;"></i> ผู้จัดส่ง: ${order.delivery_person_name || "ไม่ระบุ"}</span>
-          <span><i data-lucide="calendar" style="width: 14px; height: 14px;"></i> วันที่: ${order.delivery_time ? new Date(order.delivery_time).toLocaleString("th-TH") : '-'}</span>
+  container.innerHTML = ordersToRender.map(order => {
+    // เช็คประเภทการรับสินค้าเพื่อเปลี่ยนไอคอนและข้อความให้ตรงกัน
+    let vehicleDisplay = order.vehicle_selection;
+    let iconName = "car";
+    let labelText = "รหัสรถ";
+
+    if (!vehicleDisplay) {
+      vehicleDisplay = "ไม่ระบุ";
+    } else if (vehicleDisplay === "pickup-self" || vehicleDisplay.toLowerCase().includes("pickup")) {
+      vehicleDisplay = "มารับเองที่ร้าน (Self-Pickup)";
+      iconName = "store"; // ใช้ไอคอนรูปร้านค้า
+      labelText = "วิธีรับสินค้า";
+    }
+
+    return `
+      <div class="order-item">
+        <div class="order-details">
+          <h3>ออเดอร์ #${order.id || '-'}</h3>
+          <div class="order-meta" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 6px; margin-top: 8px;">
+            <span><i data-lucide="user-check" style="width: 14px; height: 14px;"></i> ผู้เปิดบิล: ${order.creator_name || "ไม่ระบุ"} (${order.creator_department || "ไม่ระบุแผนก"})</span>
+            <span><i data-lucide="truck" style="width: 14px; height: 14px;"></i> ผู้จัดส่ง: ${order.delivery_person_name || "ไม่ระบุ"}</span>
+            <span><i data-lucide="${iconName}" style="width: 14px; height: 14px;"></i> ${labelText}: ${vehicleDisplay}</span>
+            <span><i data-lucide="calendar" style="width: 14px; height: 14px;"></i> วันที่: ${order.delivery_time ? new Date(order.delivery_time).toLocaleString("th-TH") : '-'}</span>
+          </div>
+        </div>
+        <div class="order-actions">
+          <button onclick="viewSlip('${order.payment_slip || ''}')" class="btn-action btn-view-slip">
+            <i data-lucide="image" style="width: 15px; height: 15px;"></i> ดูสลิป
+          </button>
+          <button onclick="verifyOrder(${order.id})" class="btn-action btn-verify">
+            <i data-lucide="check-circle-2" style="width: 15px; height: 15px;"></i> ยืนยันการชำระเงิน
+          </button>
         </div>
       </div>
-      <div class="order-actions">
-        <button onclick="viewSlip('${order.payment_slip || ''}')" class="btn-action btn-view-slip">
-          <i data-lucide="image" style="width: 15px; height: 15px;"></i> ดูสลิป
-        </button>
-        <button onclick="verifyOrder(${order.id})" class="btn-action btn-verify">
-          <i data-lucide="check-circle-2" style="width: 15px; height: 15px;"></i> ยืนยันการชำระเงิน
-        </button>
-      </div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
   
   lucide.createIcons();
 }
-
 function handleSearch(keyword) {
   const term = (keyword || "").trim().toLowerCase();
   if (!term) {
@@ -85,24 +101,24 @@ function handleSearch(keyword) {
   }
   const filtered = allOrders.filter((order) => {
     const idMatch = String(order.id || "").includes(term);
-    const nameMatch = (order.delivery_person_name || "").toLowerCase().includes(term);
-    return idMatch || nameMatch;
+    const creatorMatch = (order.creator_name || "").toLowerCase().includes(term);
+    const deliveryMatch = (order.delivery_person_name || "").toLowerCase().includes(term);
+    const vehicleMatch = (order.vehicle_selection || "").toLowerCase().includes(term);
+    return idMatch || creatorMatch || deliveryMatch || vehicleMatch;
   });
   renderOrders(filtered);
 }
 
-// ฟังก์ชันเปิดดูรูปสลิปแบบ Modal ในหน้าเดียวกัน (ไม่ต้องเปิดแท็บใหม่)
+// ฟังก์ชันเปิดดูรูปสลิปแบบ Modal ในหน้าเดียวกัน
 function viewSlip(url) {
   if (!url) {
     alert("ไม่พบไฟล์หลักฐานการชำระเงิน");
     return;
   }
 
-  // ลบ Modal เก่าทิ้งก่อน (ถ้ามีค้างอยู่)
   const existingModal = document.getElementById("slipModal");
   if (existingModal) existingModal.remove();
 
-  // สร้างโครงสร้าง Modal HTML ขึ้นมาใหม่
   const modalHTML = `
     <div id="slipModal" style="
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -130,10 +146,8 @@ function viewSlip(url) {
     </div>
   `;
 
-  // แปะ Modal ลงใน body ของหน้าเว็บ
   document.body.insertAdjacentHTML("beforeend", modalHTML);
 
-  // กดคลิกพื้นที่ฉากหลังสีดำเพื่อปิด Modal ได้ด้วย
   document.getElementById("slipModal").addEventListener("click", (e) => {
     if (e.target.id === "slipModal") {
       closeSlipModal();
@@ -141,7 +155,6 @@ function viewSlip(url) {
   });
 }
 
-// ฟังก์ชันปิด Modal รูปภาพ
 function closeSlipModal() {
   const modal = document.getElementById("slipModal");
   if (modal) modal.remove();
