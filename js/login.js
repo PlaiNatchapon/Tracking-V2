@@ -77,6 +77,8 @@ document.getElementById("loginForm").addEventListener("submit", function (e) {
                 window.location.href = "checker.html";
         } else if (result.department === "logistic") {
           window.location.href = "logistic.html";
+               } else if (result.department === "accounting") {
+          window.location.href = "accounting.html";
         } else {
           window.location.href = "index.html"; // หน้าค่าเริ่มต้นถ้าไม่ตรงกับเงื่อนไข
         }
