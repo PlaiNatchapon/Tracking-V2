@@ -37,22 +37,28 @@ module.exports = function (pool, io) {
     // ==========================================
     // 2. ปุ่มยืนยันการชำระเงิน (อัปเดตเฉพาะคอลัมน์ accounting_status)
     // ==========================================
-    router.put('/orders/:id/verify', async (req, res) => {
-        const { id } = req.params;
-        try {
-            const updateQuery = `
-                UPDATE orders 
-                SET accounting_status = 'approved' 
-                WHERE id = $1 
-                RETURNING id;
-            `;
-            await pool.query(updateQuery, [id]);
-            res.json({ message: "ยืนยันการชำระเงินสำเร็จ", order_id: id });
-        } catch (error) {
-            console.error("Error verifying payment:", error);
-            res.status(500).json({ error: "Internal Server Error" });
+  router.put('/orders/:id/verify', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const updateQuery = `
+            UPDATE orders 
+            SET accounting_status = 'approved' 
+            WHERE id = $1 AND (accounting_status IS NULL OR accounting_status != 'approved')
+            RETURNING id;
+        `;
+        const result = await pool.query(updateQuery, [id]);
+        
+        // ถ้า rowCount เป็น 0 แปลว่ามีคนอื่นกดยืนยันตัดหน้าไปก่อนแล้ว
+        if (result.rowCount === 0) {
+            return res.status(400).json({ error: "ออเดอร์นี้ถูกยืนยันการชำระเงินไปเรียบร้อยแล้วโดยผู้ใช้งานท่านอื่น" });
         }
-    });
+
+        res.json({ message: "ยืนยันการชำระเงินสำเร็จ", order_id: id });
+    } catch (error) {
+        console.error("Error verifying payment:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
     // ==========================================
     // 3. ปิดงาน / ยืนยันสลิปถูกต้อง (ปุ่มปิดงาน)
     // ==========================================
