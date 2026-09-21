@@ -81,7 +81,7 @@ module.exports = function (pool, io) {
     "/submit",
     upload.fields([
       { name: "goods_photos", maxCount: 10 },
-      { name: "payment_slip", maxCount: 1 }
+      { name: "payment_slip", maxCount: 1 },
     ]),
     async (req, res) => {
       const {
@@ -146,13 +146,23 @@ module.exports = function (pool, io) {
           WHERE order_id = $3
         `;
 
-        await pool.query(updateCheckQuery, [work_comment || null, slipPath, order_id]);
+        await pool.query(updateCheckQuery, [
+          work_comment || null,
+          slipPath,
+          order_id,
+        ]);
 
         if (io) io.emit("orderUpdated");
 
-        res.json({ success: true, message: "บันทึกผลการจัดส่งสำเร็จเรียบร้อย" });
+        res.json({
+          success: true,
+          message: "บันทึกผลการจัดส่งสำเร็จเรียบร้อย",
+        });
       } catch (err) {
-        console.error("Error saving logistic submission to delivery_results:", err);
+        console.error(
+          "Error saving logistic submission to delivery_results:",
+          err,
+        );
         res.status(500).json({ success: false, error: err.message });
       }
     },
@@ -169,10 +179,15 @@ module.exports = function (pool, io) {
             work_comment = COALESCE($3, work_comment)
         WHERE order_id = $4
       `;
-      
+
       const departureTimestamp = departure_time || null;
 
-      await pool.query(query, [arrival_time, departureTimestamp, work_comment, order_id]);
+      await pool.query(query, [
+        arrival_time,
+        departureTimestamp,
+        work_comment,
+        order_id,
+      ]);
       res.json({ success: true });
     } catch (err) {
       console.error("Error autosaving draft:", err);

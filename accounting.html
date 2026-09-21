@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ตรวจสอบการชำระเงิน - แผนกบัญชี</title>
+    <!-- โหลดไลบรารี Socket.io และตัวเช็กสิทธิ์ -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="js/auth-guard.js"></script>
+
+    <!-- Google Fonts: Kanit & IBM Plex Sans Thai -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Kanit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="./css/acc.css" />
+  </head>
+  <body>
+    <div class="accounting-container">
+      <!-- Header Brand Section -->
+      <header class="brand-header">
+        <div class="brand-left">
+          <div class="brand-icon">
+            <i data-lucide="receipt"></i>
+          </div>
+          <div class="brand-info">
+            <h1>แผนกบัญชีและการเงิน</h1>
+            <p>ACCOUNTING & PAYMENT VERIFICATION</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <!-- ช่องค้นหาออเดอร์ -->
+          <div class="search-wrapper">
+            <span class="search-icon">
+              <i data-lucide="search" style="width: 16px; height: 16px"></i>
+            </span>
+            <input
+              type="text"
+              id="searchInput"
+              class="search-input"
+              placeholder="ค้นหาเลขออเดอร์, ชื่อผู้จัดส่ง..."
+              oninput="handleSearch(this.value)"
+            />
+          </div>
+
+          <!-- ปุ่มออกจากระบบ -->
+          <button class="btn-logout" onclick="handleLogout()">
+            <i data-lucide="log-out" style="width: 16px; height: 16px"></i>
+            ออกจากระบบ
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Ticket Card -->
+      <main class="content-card">
+        <div class="section-title-wrapper">
+          <div class="section-title">
+            <i
+              data-lucide="file-text"
+              style="width: 18px; height: 18px; color: var(--brand-2)"
+            ></i>
+            รายการออเดอร์รอตรวจสอบหลักฐานการชำระเงิน
+          </div>
+          <span id="orderCountBadge" class="badge-count">0 รายการ</span>
+        </div>
+
+        <!-- รายการออเดอร์ -->
+        <div id="accountingOrderList" class="orders-grid">
+          <div class="empty-state">
+            <i data-lucide="folder-search"></i>
+            <p>
+              กำลังโหลดข้อมูลรายการออเดอร์
+              หรือยังไม่มีรายการสลิปชำระเงินในขณะนี้
+            </p>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="./js/acc.js"></script>
+  </body>
+</html>

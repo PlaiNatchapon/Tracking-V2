@@ -79,6 +79,9 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "login.html"));
 });
 
+const accountingRoutes = require("./backend/Bacc")(pool, io);
+app.use("/api/accounting", accountingRoutes);
+
 // ⬅️ 6. เปลี่ยนจาก app.listen มาเป็น server.listen แทน
 server.listen(3000, () => {
   console.log("Server is running on http://localhost:3000");
