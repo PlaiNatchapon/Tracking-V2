@@ -1,17 +1,9 @@
-     // เริ่มต้นใช้งาน Lucide Icons
-      lucide.createIcons();
+console.log("=== acc.js ทำงานแล้วจ้า ===");
 
-      let allOrders = []; // ตัวแปรเก็บข้อมูลออเดอร์ทั้งหมดเพื่อใช้กรองผ่านช่องค้นหา
+lucide.createIcons();
+let allOrders = [];
 
-      function handleLogout() {
-        localStorage.clear();
-        window.location.replace("login.html");
-        if (window.history && window.history.pushState) {
-          window.history.replaceState(null, null, "login.html");
-        }
-      }
-
-      function handleLogout() {
+function handleLogout() {
   localStorage.clear();
   window.location.replace("login.html");
   if (window.history && window.history.pushState) {
@@ -19,126 +11,160 @@
   }
 }
 
-      // ฟังก์ชันสำหรับดึงข้อมูลออเดอร์ (เตรียมเชื่อมต่อหลังบ้าน)
-      async function fetchAccountingOrders() {
-        const container = document.getElementById("accountingOrderList");
-        const badge = document.getElementById("orderCountBadge");
-
-        try {
+async function fetchAccountingOrders() {
+  console.log("กำลังยิง API ไปที่ /api/accounting/orders ...");
+  try {
+    const response = await fetch("/api/accounting/orders");
+    console.log("สถานะ Response จากเซิร์ฟเวอร์:", response.status);
     
+    if (!response.ok) throw new Error("Network response was not ok");
+    
+    const data = await response.json();
+    console.log("ข้อมูลที่ได้รับจากหลังบ้าน:", data);
+    
+    allOrders = Array.isArray(data) ? data : [];
+    renderOrders(allOrders);
+    
+  } catch (err) {
+    console.error("เกิดข้อผิดพลาดตอนดึงข้อมูล:", err);
+    document.getElementById("accountingOrderList").innerHTML = `
+      <div class="empty-state">
+        <p style="color: var(--danger);">ไม่สามารถดึงข้อมูลได้: ${err.message}</p>
+      </div>
+    `;
+  }
+}
 
-          allOrders = []; // ค่าจำลองเบื้องต้น
+function renderOrders(ordersToRender) {
+  const container = document.getElementById("accountingOrderList");
+  const badge = document.getElementById("orderCountBadge");
 
-          renderOrders(allOrders);
-        } catch (err) {
-          console.error("Error fetching accounting orders:", err);
-        }
-      }
+  if (!container || !badge) return;
 
-      // ฟังก์ชันเรนเดอร์รายการลงหน้าจอ
-      function renderOrders(ordersToRender) {
-        const container = document.getElementById("accountingOrderList");
-        const badge = document.getElementById("orderCountBadge");
+  badge.innerText = `${ordersToRender.length} รายการ`;
 
-        badge.innerText = `${ordersToRender.length} รายการ`;
+  if (ordersToRender.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <i data-lucide="folder-search" style="width: 48px; height: 48px; margin-bottom: 12px;"></i>
+        <p>ไม่พบรายการออเดอร์ที่มีหลักฐานการชำระเงินรอตรวจสอบในขณะนี้</p>
+      </div>
+    `;
+    lucide.createIcons();
+    return;
+  }
 
-        if (ordersToRender.length === 0) {
-          container.innerHTML = `
-          <div class="empty-state">
-            <i data-lucide="folder-search"></i>
-            <p>ไม่พบรายการออเดอร์ที่ตรงกับการค้นหา หรือยังไม่มีรายการสลิปชำระเงิน</p>
-          </div>
-        `;
-          lucide.createIcons();
-          return;
-        }
-
-        container.innerHTML = ordersToRender
-          .map(
-            (order) => `
-        <div class="order-item">
-          <div class="order-details">
-            <h3>ออเดอร์ #${order.id}</h3>
-            <div class="order-meta">
-              <span><i data-lucide="user" style="width: 14px; height: 14px;"></i> ผู้จัดส่ง: ${order.delivery_person_name || "ไม่ระบุ"}</span>
-              <span><i data-lucide="calendar" style="width: 14px; height: 14px;"></i> วันที่บันทึก: ${new Date(order.created_at).toLocaleString("th-TH")}</span>
-            </div>
-          </div>
-          <div class="order-actions">
-            <button onclick="viewSlip('${order.payment_slip}')" class="btn-action btn-view-slip">
-              <i data-lucide="image" style="width: 16px; height: 16px;"></i>
-              ดูสลิป
-            </button>
-            <button onclick="verifyOrder(${order.id})" class="btn-action btn-verify">
-              <i data-lucide="check-circle-2" style="width: 16px; height: 16px;"></i>
-              ยืนยันการชำระเงิน
-            </button>
-          </div>
+  container.innerHTML = ordersToRender.map(order => `
+    <div class="order-item">
+      <div class="order-details">
+        <h3>ออเดอร์ #${order.id || '-'}</h3>
+        <div class="order-meta">
+          <span><i data-lucide="user" style="width: 14px; height: 14px;"></i> ผู้จัดส่ง: ${order.delivery_person_name || "ไม่ระบุ"}</span>
+          <span><i data-lucide="calendar" style="width: 14px; height: 14px;"></i> วันที่: ${order.delivery_time ? new Date(order.delivery_time).toLocaleString("th-TH") : '-'}</span>
         </div>
-      `,
-          )
-          .join("");
+      </div>
+      <div class="order-actions">
+        <button onclick="viewSlip('${order.payment_slip || ''}')" class="btn-action btn-view-slip">
+          <i data-lucide="image" style="width: 15px; height: 15px;"></i> ดูสลิป
+        </button>
+        <button onclick="verifyOrder(${order.id})" class="btn-action btn-verify">
+          <i data-lucide="check-circle-2" style="width: 15px; height: 15px;"></i> ยืนยันการชำระเงิน
+        </button>
+      </div>
+    </div>
+  `).join("");
+  
+  lucide.createIcons();
+}
 
-        lucide.createIcons();
-      }
+function handleSearch(keyword) {
+  const term = (keyword || "").trim().toLowerCase();
+  if (!term) {
+    renderOrders(allOrders);
+    return;
+  }
+  const filtered = allOrders.filter((order) => {
+    const idMatch = String(order.id || "").includes(term);
+    const nameMatch = (order.delivery_person_name || "").toLowerCase().includes(term);
+    return idMatch || nameMatch;
+  });
+  renderOrders(filtered);
+}
 
-      // ฟังก์ชันกรองข้อมูลเมื่อพิมพ์ในช่องค้นหา
-      function handleSearch(keyword) {
-        const term = keyword.trim().toLowerCase();
-        if (!term) {
-          renderOrders(allOrders);
-          return;
-        }
+// ฟังก์ชันเปิดดูรูปสลิปแบบ Modal ในหน้าเดียวกัน (ไม่ต้องเปิดแท็บใหม่)
+function viewSlip(url) {
+  if (!url) {
+    alert("ไม่พบไฟล์หลักฐานการชำระเงิน");
+    return;
+  }
 
-        const filtered = allOrders.filter((order) => {
-          const idMatch = String(order.id).includes(term);
-          const nameMatch = (order.delivery_person_name || "")
-            .toLowerCase()
-            .includes(term);
-          return idMatch || nameMatch;
-        });
+  // ลบ Modal เก่าทิ้งก่อน (ถ้ามีค้างอยู่)
+  const existingModal = document.getElementById("slipModal");
+  if (existingModal) existingModal.remove();
 
-        renderOrders(filtered);
-      }
+  // สร้างโครงสร้าง Modal HTML ขึ้นมาใหม่
+  const modalHTML = `
+    <div id="slipModal" style="
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.75); display: flex; justify-content: center;
+      align-items: center; z-index: 9999; backdrop-filter: blur(4px);
+    ">
+      <div style="
+        position: relative; background: #fff; padding: 20px; border-radius: 12px;
+        max-width: 90%; max-height: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        display: flex; flex-direction: column; align-items: center;
+      ">
+        <button onclick="closeSlipModal()" style="
+          position: absolute; top: 10px; right: 10px; background: #ff4d4f;
+          color: #fff; border: none; border-radius: 50%; width: 32px; height: 32px;
+          font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        ">×</button>
+        
+        <h3 style="margin-top: 0; margin-bottom: 15px; font-family: 'Kanit', sans-serif; color: #333;">หลักฐานการชำระเงิน</h3>
+        
+        <div style="overflow: auto; max-width: 100%; max-height: 75vh;">
+          <img src="${url}" alt="Payment Slip" style="max-width: 100%; height: auto; border-radius: 8px; display: block;" />
+        </div>
+      </div>
+    </div>
+  `;
 
-      function viewSlip(url) {
-        if (!url) {
-          alert("ไม่พบไฟล์หลักฐานการชำระเงิน");
-          return;
-        }
-        window.open(url, "_blank");
-      }
+  // แปะ Modal ลงใน body ของหน้าเว็บ
+  document.body.insertAdjacentHTML("beforeend", modalHTML);
 
-      function verifyOrder(orderId) {
-        if (
-          confirm(
-            `ต้องการยืนยันการชำระเงินสำหรับออเดอร์ #${orderId} ใช่หรือไม่?`,
-          )
-        ) {
-          alert("บันทึกการตรวจสอบเรียบร้อย");
-        }
-      }
+  // กดคลิกพื้นที่ฉากหลังสีดำเพื่อปิด Modal ได้ด้วย
+  document.getElementById("slipModal").addEventListener("click", (e) => {
+    if (e.target.id === "slipModal") {
+      closeSlipModal();
+    }
+  });
+}
 
-      document.addEventListener("DOMContentLoaded", () => {
+// ฟังก์ชันปิด Modal รูปภาพ
+function closeSlipModal() {
+  const modal = document.getElementById("slipModal");
+  if (modal) modal.remove();
+}
+
+async function verifyOrder(orderId) {
+  if (confirm(`ต้องการยืนยันการชำระเงินสำหรับออเดอร์ #${orderId} ใช่หรือไม่?`)) {
+    try {
+      const response = await fetch(`/api/accounting/orders/${orderId}/verify`, { method: 'PUT' });
+      const result = await response.json();
+      if (response.ok) {
+        alert("บันทึกการตรวจสอบเรียบร้อย");
         fetchAccountingOrders();
-      });
-
-      async function fetchAccountingOrders() {
-        try {
-          const response = await fetch("/api/accounting/orders"); // เปลี่ยน path ตามที่คุณ mount ใน server.js
-          allOrders = await response.json();
-          renderOrders(allOrders);
-        } catch (err) {
-          console.error("Error fetching accounting orders:", err);
-        }
+      } else {
+        alert("เกิดข้อผิดพลาด: " + (result.error || 'Unknown error'));
       }
+    } catch (err) {
+      console.error("Error verifying order:", err);
+    }
+  }
+}
 
-      async function fetchAccountingOrders() {
-        try {
-          const response = await fetch("/api/accounting/orders"); // เปลี่ยน path ตามที่คุณ mount ใน server.js
-          allOrders = await response.json();
-          renderOrders(allOrders);
-        } catch (err) {
-          console.error("Error fetching accounting orders:", err);
-        }
-      }
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("DOMContentLoaded ทำงานแล้ว เรียกฟังก์ชันดึงข้อมูล...");
+  fetchAccountingOrders();
+});

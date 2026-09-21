@@ -3,8 +3,8 @@ const express = require('express');
 module.exports = function (pool, io) {
     const router = express.Router();
 
-    // ==========================================
-    // 1. ดึงรายการออเดอร์ที่มีหลักฐานการชำระเงิน (เฉพาะที่ยังไม่ปิดงาน)
+ // ==========================================
+    // 1. ดึงรายการออเดอร์ (มองจากคอลัมน์ accounting_status เป็นหลัก)
     // ==========================================
     router.get('/orders', async (req, res) => {
         try {
@@ -12,16 +12,17 @@ module.exports = function (pool, io) {
                 SELECT 
                     o.id,
                     o.status,
-                    dr.delivery_person_name,
-                    dr.delivery_department,
-                    COALESCE(dr.payment_slip, c.payment_slip, o.payment_slip) AS payment_slip,
-                    dr.created_at AS delivery_time
+                    o.accounting_status,
+                    COALESCE(dr.delivery_person_name, 'ไม่ระบุ') AS delivery_person_name,
+                    COALESCE(dr.delivery_department, o.department) AS delivery_department,
+                    COALESCE(o.payment_slip, dr.payment_slip, c.payment_slip) AS payment_slip,
+                    COALESCE(dr.created_at, o.created_at) AS delivery_time
                 FROM orders o
                 LEFT JOIN delivery_results dr ON o.id = dr.order_id
                 LEFT JOIN order_checks c ON o.id = c.order_id
-                WHERE COALESCE(dr.payment_slip, c.payment_slip, o.payment_slip) IS NOT NULL
-                  AND o.status != 'completed'
-                ORDER BY dr.created_at DESC NULLS LAST;
+                WHERE COALESCE(o.payment_slip, dr.payment_slip, c.payment_slip) IS NOT NULL
+                  AND (o.accounting_status IS NULL OR o.accounting_status != 'approved')
+                ORDER BY o.id DESC;
             `;
             const { rows } = await pool.query(query);
             res.json(rows);
@@ -32,57 +33,24 @@ module.exports = function (pool, io) {
     });
 
     // ==========================================
-    // 2. ดูรายละเอียดผู้ปฏิบัติงานทั้งหมด & เอกสาร (ปุ่มดูรายละเอียด)
+    // 2. ปุ่มยืนยันการชำระเงิน (อัปเดตเฉพาะคอลัมน์ accounting_status)
     // ==========================================
-    router.get('/orders/:id/details', async (req, res) => {
+    router.put('/orders/:id/verify', async (req, res) => {
         const { id } = req.params;
         try {
-            const query = `
-                SELECT 
-                    o.id AS order_id,
-                    o.status,
-                    -- 1. คนเปิดบิล (Sales / Admin)
-                    o.employee_name AS creator_name,
-                    o.department AS creator_department,
-                    
-                    -- 2. คนจัดของ (Fulfillment)
-                    f.fullname AS fulfillment_name,
-                    f.department AS fulfillment_department,
-                    
-                    -- 3. คนตรวจของ (Checker)
-                    c.checker_name AS checker_name,
-                    c.department AS checker_department,
-                    
-                    -- 4. คนส่งของ (Delivery)
-                    dr.delivery_person_name,
-                    dr.delivery_department,
-                    
-                    -- รูปภาพและเอกสารต่างๆ
-                    o.quotation_image,
-                    o.delivery_image,
-                    c.packing_photos,
-                    dr.goods_photos,
-                    COALESCE(dr.payment_slip, c.payment_slip, o.payment_slip) AS payment_slip
-
-                FROM orders o
-                LEFT JOIN order_fulfillments f ON o.id = f.order_id
-                LEFT JOIN order_checks c ON o.id = c.order_id
-                LEFT JOIN delivery_results dr ON o.id = dr.order_id
-                WHERE o.id = $1;
+            const updateQuery = `
+                UPDATE orders 
+                SET accounting_status = 'approved' 
+                WHERE id = $1 
+                RETURNING id;
             `;
-            const { rows } = await pool.query(query, [id]);
-
-            if (rows.length === 0) {
-                return res.status(404).json({ error: "Order not found" });
-            }
-
-            res.json(rows[0]);
+            await pool.query(updateQuery, [id]);
+            res.json({ message: "ยืนยันการชำระเงินสำเร็จ", order_id: id });
         } catch (error) {
-            console.error("Error fetching order details:", error);
+            console.error("Error verifying payment:", error);
             res.status(500).json({ error: "Internal Server Error" });
         }
     });
-
     // ==========================================
     // 3. ปิดงาน / ยืนยันสลิปถูกต้อง (ปุ่มปิดงาน)
     // ==========================================
