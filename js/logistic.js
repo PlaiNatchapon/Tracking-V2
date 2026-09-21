@@ -40,8 +40,16 @@ async function fetchLogisticOrders() {
       return;
     }
 
+    // กรองไม่ให้ออเดอร์ที่จัดส่งสำเร็จแล้ว (completed) แสดงขึ้นมาบนหน้าบ้านตามต้องการ
+    const activeOrders = orders.filter(order => order.logistic_status !== 'completed');
+
+    if (activeOrders.length === 0) {
+      orderListEl.innerHTML = `<p style="text-align: center; color: #6b7280; padding: 40px 0;">ไม่มีรายการออเดอร์ที่ต้องดำเนินการจัดส่งในขณะนี้</p>`;
+      return;
+    }
+
     // เช็คว่ามีออเดอร์ไหนที่ผู้ใช้คนนี้กำลังทำค้างอยู่ (กำลังดำเนินการ และล็อคโดยชื่อเรา)
-    const myActiveOrder = orders.find(order => order.logistic_status === 'processing' && order.locked_by === currentUsername);
+    const myActiveOrder = activeOrders.find(order => order.logistic_status === 'processing' && order.locked_by === currentUsername);
     
     // ถ้ามีงานค้างอยู่ และยังไม่มี Modal เปิดอยู่ ให้เด้งขึ้นมาทันทีอัตโนมัติ
     if (myActiveOrder && !document.getElementById("logisticModal")) {
@@ -49,16 +57,12 @@ async function fetchLogisticOrders() {
       openLogisticModal(myActiveOrder);
     }
 
-    orderListEl.innerHTML = orders.map(order => {
+    orderListEl.innerHTML = activeOrders.map(order => {
       const isLocked = order.logistic_status === 'processing';
-      const isCompleted = order.logistic_status === 'completed';
       const isMyLock = order.locked_by === currentUsername;
 
       let actionButton = '';
-      if (isCompleted) {
-        // [สีเขียวเข้ม] สื่อถึงจัดส่งสำเร็จแล้ว เรียบร้อย
-        actionButton = `<span style="background: #def7ec; color: #03543f; border: 1px solid #bcf0da; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">✓ จัดส่งสำเร็จแล้ว</span>`;
-      } else if (isLocked && !isMyLock) {
+      if (isLocked && !isMyLock) {
         // [สีส้ม/เหลือง] สื่อว่ากำลังถูกใช้งานโดยคนอื่นอยู่
         actionButton = `<span style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;">กำลังดำเนินการโดย: ${order.locked_by}</span>`;
       } else if (isMyLock) {
@@ -252,7 +256,7 @@ function triggerAutoSave(orderId) {
   }, 1000);
 }
 
-// ฟังก์ชันพรีวิวสลิปดั้งเดิม
+// ฟังก์ชันพรีวิวสลิป
 function previewPaymentSlip(input) {
   if (input.files && input.files[0]) {
     paymentSlipFile = input.files[0];
@@ -287,7 +291,7 @@ function removePaymentSlip() {
   if (previewContainer) previewContainer.innerHTML = "";
 }
 
-// ฟังก์ชันพรีวิวรูปหน้างานดั้งเดิม
+// ฟังก์ชันพรีวิวรูปหน้างาน
 function previewGoodsPhotos(input) {
   if (input.files) {
     Array.from(input.files).forEach(file => {
@@ -341,20 +345,20 @@ function removeGoodsPhoto(index) {
   }
 }
 
-// ฟังก์ชันส่งข้อมูลดั้งเดิม
+// ฟังก์ชันส่งข้อมูลบันทึกผลการจัดส่งไปบันทึกลงตาราง delivery_results
 async function submitLogisticOrder(event, orderId) {
   if (event) event.preventDefault();
 
-  const checkerName = localStorage.getItem("fullname") || localStorage.getItem("name") || localStorage.getItem("username") || "ไม่ระบุชื่อ";
-  const department = document.getElementById("departmentInput")?.getAttribute("data-value") || "Logistic";
+  const deliveryPersonName = localStorage.getItem("fullname") || localStorage.getItem("name") || localStorage.getItem("username") || "ไม่ระบุชื่อ";
+  const deliveryDepartment = document.getElementById("departmentInput")?.getAttribute("data-value") || "Logistic";
   const arrivalTime = document.getElementById("arrivalTimeInput")?.value || "";
   const departureTime = document.getElementById("departureTimeInput")?.value || "";
   const workComment = document.getElementById("workCommentInput")?.value || "";
 
   const formData = new FormData();
   formData.append("order_id", orderId);
-  formData.append("checker_name", checkerName);
-  formData.append("department", department);
+  formData.append("delivery_person_name", deliveryPersonName);
+  formData.append("delivery_department", deliveryDepartment);
   formData.append("arrival_time", arrivalTime);
   formData.append("departure_time", departureTime);
   formData.append("work_comment", workComment);
@@ -377,9 +381,9 @@ async function submitLogisticOrder(event, orderId) {
 
     const result = await response.json();
     if (response.ok && result.success) {
-      alert("✅ บันทึกข้อมูลการจัดส่งสำเร็จ!");
+      alert("✅ บันทึกผลการจัดส่งสำเร็จ!");
       document.getElementById("logisticModal")?.remove();
-      fetchLogisticOrders();
+      fetchLogisticOrders(); // ดึงข้อมูลใหม่ ออเดอร์ที่สำเร็จจะถูกกรองออกและหายไปจากหน้าบ้านทันที
     } else {
       alert("❌ บันทึกไม่สำเร็จ: " + (result.error || "เกิดข้อผิดพลาด"));
     }

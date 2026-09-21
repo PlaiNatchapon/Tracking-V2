@@ -76,7 +76,7 @@ module.exports = function (pool, io) {
     }
   });
 
-  // 2. บันทึกผลการจัดส่งหน้างาน (แบบดั้งเดิม + รองรับ payment_slip และเปลี่ยนสถานะเป็น completed)
+  // 2. บันทึกผลการจัดส่งหน้างาน (บันทึกลงตาราง delivery_results และอัปเดต order_checks เป็น completed)
   router.post(
     "/submit",
     upload.fields([
@@ -86,8 +86,8 @@ module.exports = function (pool, io) {
     async (req, res) => {
       const {
         order_id,
-        checker_name,
-        department,
+        delivery_person_name,
+        delivery_department,
         arrival_time,
         departure_time,
         work_comment,
@@ -106,67 +106,79 @@ module.exports = function (pool, io) {
           slipPath = `/uploads/${req.files["payment_slip"][0].filename}`;
         }
 
-        const query = `
-          UPDATE public.order_checks 
-          SET checker_name = $1,
-              department = $2,
-              departure_time = $3,
-              packing_photos = $4,
-              work_comment = $5,
-              logistic_status = 'completed',
-              payment_slip = COALESCE($6, payment_slip)
-          WHERE order_id = $7
+        // แปลงเวลาออกให้เป็นรูปแบบ String หรือ Timestamp ตามตาราง
+        const departureTimestamp = departure_time || null;
+
+        // 2.1 บันทึกหรืออัปเดตข้อมูลลงตาราง delivery_results (ใช้ UPSERT ป้องกันซ้ำ)
+        const insertDeliveryQuery = `
+          INSERT INTO public.delivery_results 
+          (order_id, delivery_person_name, delivery_department, arrival_time, departure_time, payment_slip, goods_photos, work_comment, status, locked_by)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'completed', $2)
+          ON CONFLICT (order_id) 
+          DO UPDATE SET 
+            delivery_person_name = EXCLUDED.delivery_person_name,
+            delivery_department = EXCLUDED.delivery_department,
+            arrival_time = EXCLUDED.arrival_time,
+            departure_time = EXCLUDED.departure_time,
+            payment_slip = COALESCE(EXCLUDED.payment_slip, public.delivery_results.payment_slip),
+            goods_photos = EXCLUDED.goods_photos,
+            work_comment = EXCLUDED.work_comment,
+            status = 'completed';
         `;
 
-        const departureTimestamp = departure_time
-          ? `${new Date().toISOString().split("T")[0]} ${departure_time}:00`
-          : new Date();
-
-        await pool.query(query, [
-          checker_name || "ไม่ระบุชื่อ",
-          department || "Logistic",
-          departureTimestamp,
-          photoPaths,
-          work_comment || null,
-          slipPath,
+        await pool.query(insertDeliveryQuery, [
           order_id,
+          delivery_person_name || "ไม่ระบุชื่อ",
+          delivery_department || "Logistic",
+          arrival_time || null,
+          departureTimestamp,
+          slipPath,
+          photoPaths, // ส่งเป็น Array เข้าคอลัมน์ text[] ของ PostgreSQL ได้โดยตรง
+          work_comment || null,
         ]);
+
+        // 2.2 อัปเดตสถานะในตาราง order_checks ให้เป็น completed ด้วย เพื่อให้ออเดอร์หายไปจากหน้าบ้าน
+        const updateCheckQuery = `
+          UPDATE public.order_checks 
+          SET logistic_status = 'completed',
+              work_comment = COALESCE($1, work_comment),
+              payment_slip = COALESCE($2, payment_slip)
+          WHERE order_id = $3
+        `;
+
+        await pool.query(updateCheckQuery, [work_comment || null, slipPath, order_id]);
 
         if (io) io.emit("orderUpdated");
 
-        res.json({ success: true, message: "บันทึกสำเร็จ" });
+        res.json({ success: true, message: "บันทึกผลการจัดส่งสำเร็จเรียบร้อย" });
       } catch (err) {
-        console.error("Error saving logistic submission:", err);
+        console.error("Error saving logistic submission to delivery_results:", err);
         res.status(500).json({ success: false, error: err.message });
       }
     },
   );
 
+  // 3. API สำหรับรับข้อมูล Auto-save แบบเงียบๆ
+  router.post("/autosave", async (req, res) => {
+    const { order_id, arrival_time, departure_time, work_comment } = req.body;
+    try {
+      const query = `
+        UPDATE public.order_checks 
+        SET arrival_time = COALESCE($1, arrival_time),
+            departure_time = COALESCE($2, departure_time),
+            work_comment = COALESCE($3, work_comment)
+        WHERE order_id = $4
+      `;
+      
+      const departureTimestamp = departure_time || null;
 
-  // API สำหรับรับข้อมูล Auto-save แบบเงียบๆ
-router.post("/autosave", async (req, res) => {
-  const { order_id, arrival_time, departure_time, work_comment } = req.body;
-  try {
-    const query = `
-      UPDATE public.order_checks 
-      SET arrival_time = COALESCE($1, arrival_time),
-          departure_time = COALESCE($2, departure_time),
-          work_comment = COALESCE($3, work_comment)
-      WHERE order_id = $4
-    `;
-    
-    // แปลงเวลาออกให้เป็น Timestamp ถ้ามีค่าส่งมา
-    const departureTimestamp = departure_time
-      ? `${new Date().toISOString().split("T")[0]} ${departure_time}:00`
-      : null;
-
-    await pool.query(query, [arrival_time, departureTimestamp, work_comment, order_id]);
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Error autosaving draft:", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
+      await pool.query(query, [arrival_time, departureTimestamp, work_comment, order_id]);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Error autosaving draft:", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
 
   return router;
 };
