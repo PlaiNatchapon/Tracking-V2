@@ -75,7 +75,8 @@ app.use("/api/checker", checkerRoutes);
 const logisticRoutes = require("./backend/Blogistic")(pool, io);
 app.use("/api/logistic", logisticRoutes);
 
-
+const adminRoutes = require("./backend/Bsystem")(pool, io);
+app.use("/api/admin", adminRoutes);
 // กำหนดให้เปิดเข้าหน้า login.html ทันทีเมื่อเข้าเว็บพอร์ต 3000
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "login.html"));
