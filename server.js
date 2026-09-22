@@ -45,6 +45,7 @@ app.use(cors());
 // อนุญาตให้เซิร์ฟเวอร์อ่านไฟล์หน้าบ้าน (HTML, CSS, JS) ในโปรเจกต์
 app.use(express.static(path.join(__dirname)));
 
+
 const pool = new Pool({
   user: "postgres",
   host: "localhost",

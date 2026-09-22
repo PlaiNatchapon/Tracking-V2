@@ -16,15 +16,14 @@ async function fetchAccountingOrders() {
   try {
     const response = await fetch("/api/accounting/orders");
     console.log("สถานะ Response จากเซิร์ฟเวอร์:", response.status);
-    
+
     if (!response.ok) throw new Error("Network response was not ok");
-    
+
     const data = await response.json();
     console.log("ข้อมูลที่ได้รับจากหลังบ้าน:", data);
-    
+
     allOrders = Array.isArray(data) ? data : [];
     renderOrders(allOrders);
-    
   } catch (err) {
     console.error("เกิดข้อผิดพลาดตอนดึงข้อมูล:", err);
     document.getElementById("accountingOrderList").innerHTML = `
@@ -54,33 +53,47 @@ function renderOrders(ordersToRender) {
     return;
   }
 
-  container.innerHTML = ordersToRender.map(order => {
-    // เช็คประเภทการรับสินค้าเพื่อเปลี่ยนไอคอนและข้อความให้ตรงกัน
-    let vehicleDisplay = order.vehicle_selection;
-    let iconName = "car";
-    let labelText = "รหัสรถ";
+  container.innerHTML = ordersToRender
+    .map((order) => {
+      let vehicleDisplay = order.vehicle_selection;
+      let iconName = "car";
+      let labelText = "รหัสรถ";
 
-    if (!vehicleDisplay) {
-      vehicleDisplay = "ไม่ระบุ";
-    } else if (vehicleDisplay === "pickup-self" || vehicleDisplay.toLowerCase().includes("pickup")) {
-      vehicleDisplay = "มารับเองที่ร้าน (Self-Pickup)";
-      iconName = "store"; // ใช้ไอคอนรูปร้านค้า
-      labelText = "วิธีรับสินค้า";
-    }
+      if (!vehicleDisplay) {
+        vehicleDisplay = "ไม่ระบุ";
+      } else if (
+        vehicleDisplay === "pickup-self" ||
+        vehicleDisplay.toLowerCase().includes("pickup")
+      ) {
+        vehicleDisplay = "มารับเองที่ร้าน (Self-Pickup)";
+        iconName = "store";
+        labelText = "วิธีรับสินค้า";
+      }
 
-    return `
+      // 🛠️ ดึงเฉพาะชื่อไฟล์เพียวๆ แล้วส่งให้ API กลางช่วยวิ่งหาจากทุกโฟลเดอร์อัตโนมัติ
+      let slipPath = "";
+      if (order.payment_slip) {
+        let rawSlip = order.payment_slip.trim();
+        let filename = rawSlip.split("/").pop(); // ตัด path ออก เอาเฉพาะชื่อไฟล์ เช่น 1790065721121-501003731.png
+        if (!filename.includes(".")) {
+          filename += ".png";
+        }
+        slipPath = `/api/accounting/slip-image/${filename}`;
+      }
+
+      return `
       <div class="order-item">
         <div class="order-details">
-          <h3>ออเดอร์ #${order.id || '-'}</h3>
+          <h3>ออเดอร์ #${order.id || "-"}</h3>
           <div class="order-meta" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 6px; margin-top: 8px;">
             <span><i data-lucide="user-check" style="width: 14px; height: 14px;"></i> ผู้เปิดบิล: ${order.creator_name || "ไม่ระบุ"} (${order.creator_department || "ไม่ระบุแผนก"})</span>
             <span><i data-lucide="truck" style="width: 14px; height: 14px;"></i> ผู้จัดส่ง: ${order.delivery_person_name || "ไม่ระบุ"}</span>
             <span><i data-lucide="${iconName}" style="width: 14px; height: 14px;"></i> ${labelText}: ${vehicleDisplay}</span>
-            <span><i data-lucide="calendar" style="width: 14px; height: 14px;"></i> วันที่: ${order.delivery_time ? new Date(order.delivery_time).toLocaleString("th-TH") : '-'}</span>
+            <span><i data-lucide="calendar" style="width: 14px; height: 14px;"></i> วันที่: ${order.delivery_time ? new Date(order.delivery_time).toLocaleString("th-TH") : "-"}</span>
           </div>
         </div>
         <div class="order-actions">
-          <button onclick="viewSlip('${order.payment_slip || ''}')" class="btn-action btn-view-slip">
+          <button onclick="viewSlip('${slipPath}')" class="btn-action btn-view-slip">
             <i data-lucide="image" style="width: 15px; height: 15px;"></i> ดูสลิป
           </button>
           <button onclick="verifyOrder(${order.id})" class="btn-action btn-verify">
@@ -89,10 +102,12 @@ function renderOrders(ordersToRender) {
         </div>
       </div>
     `;
-  }).join("");
-  
+    })
+    .join("");
+
   lucide.createIcons();
 }
+
 function handleSearch(keyword) {
   const term = (keyword || "").trim().toLowerCase();
   if (!term) {
@@ -101,15 +116,20 @@ function handleSearch(keyword) {
   }
   const filtered = allOrders.filter((order) => {
     const idMatch = String(order.id || "").includes(term);
-    const creatorMatch = (order.creator_name || "").toLowerCase().includes(term);
-    const deliveryMatch = (order.delivery_person_name || "").toLowerCase().includes(term);
-    const vehicleMatch = (order.vehicle_selection || "").toLowerCase().includes(term);
+    const creatorMatch = (order.creator_name || "")
+      .toLowerCase()
+      .includes(term);
+    const deliveryMatch = (order.delivery_person_name || "")
+      .toLowerCase()
+      .includes(term);
+    const vehicleMatch = (order.vehicle_selection || "")
+      .toLowerCase()
+      .includes(term);
     return idMatch || creatorMatch || deliveryMatch || vehicleMatch;
   });
   renderOrders(filtered);
 }
 
-// ฟังก์ชันเปิดดูรูปสลิปแบบ Modal ในหน้าเดียวกัน
 function viewSlip(url) {
   if (!url) {
     alert("ไม่พบไฟล์หลักฐานการชำระเงิน");
@@ -161,15 +181,19 @@ function closeSlipModal() {
 }
 
 async function verifyOrder(orderId) {
-  if (confirm(`ต้องการยืนยันการชำระเงินสำหรับออเดอร์ #${orderId} ใช่หรือไม่?`)) {
+  if (
+    confirm(`ต้องการยืนยันการชำระเงินสำหรับออเดอร์ #${orderId} ใช่หรือไม่?`)
+  ) {
     try {
-      const response = await fetch(`/api/accounting/orders/${orderId}/verify`, { method: 'PUT' });
+      const response = await fetch(`/api/accounting/orders/${orderId}/verify`, {
+        method: "PUT",
+      });
       const result = await response.json();
       if (response.ok) {
         alert("บันทึกการตรวจสอบเรียบร้อย");
         fetchAccountingOrders();
       } else {
-        alert("เกิดข้อผิดพลาด: " + (result.error || 'Unknown error'));
+        alert("เกิดข้อผิดพลาด: " + (result.error || "Unknown error"));
       }
     } catch (err) {
       console.error("Error verifying order:", err);

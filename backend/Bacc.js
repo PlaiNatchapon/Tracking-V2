@@ -1,12 +1,33 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 
 module.exports = function (pool, io) {
     const router = express.Router();
 
- // ==========================================
+    // ==========================================
+    // 0. API ตัวกลางช่วยค้นหาและส่งรูปภาพจากทุกโฟลเดอร์อัตโนมัติ
+    // ==========================================
+    router.get('/slip-image/:filename', (req, res) => {
+        const filename = req.params.filename;
+        
+        // เช็คเส้นทางของทั้ง 2 โฟลเดอร์
+        const pathOutside = path.join(__dirname, '../uploads', filename);
+        const pathPublic = path.join(__dirname, '../public/uploads', filename);
+
+        if (fs.existsSync(pathOutside)) {
+            return res.sendFile(pathOutside); // เจอในโฟลเดอร์ uploads ด้านนอกสุด
+        } else if (fs.existsSync(pathPublic)) {
+            return res.sendFile(pathPublic); // เจอในโฟลเดอร์ public/uploads
+        } else {
+            return res.status(404).json({ error: "ไม่พบไฟล์รูปภาพ" });
+        }
+    });
+
+    // ==========================================
     // 1. ดึงรายการออเดอร์ (มองจากคอลัมน์ accounting_status เป็นหลัก)
     // ==========================================
-  router.get('/orders', async (req, res) => {
+    router.get('/orders', async (req, res) => {
         try {
             const query = `
                 SELECT 
@@ -34,70 +55,29 @@ module.exports = function (pool, io) {
             res.status(500).json({ error: "Internal Server Error" });
         }
     });
+
     // ==========================================
     // 2. ปุ่มยืนยันการชำระเงิน (อัปเดตเฉพาะคอลัมน์ accounting_status)
     // ==========================================
-  router.put('/orders/:id/verify', async (req, res) => {
-    const { id } = req.params;
-    try {
-        const updateQuery = `
-            UPDATE orders 
-            SET accounting_status = 'approved' 
-            WHERE id = $1 AND (accounting_status IS NULL OR accounting_status != 'approved')
-            RETURNING id;
-        `;
-        const result = await pool.query(updateQuery, [id]);
-        
-        // ถ้า rowCount เป็น 0 แปลว่ามีคนอื่นกดยืนยันตัดหน้าไปก่อนแล้ว
-        if (result.rowCount === 0) {
-            return res.status(400).json({ error: "ออเดอร์นี้ถูกยืนยันการชำระเงินไปเรียบร้อยแล้วโดยผู้ใช้งานท่านอื่น" });
-        }
-
-        res.json({ message: "ยืนยันการชำระเงินสำเร็จ", order_id: id });
-    } catch (error) {
-        console.error("Error verifying payment:", error);
-        res.status(500).json({ error: "Internal Server Error" });
-    }
-});
-    // ==========================================
-    // 3. ปิดงาน / ยืนยันสลิปถูกต้อง (ปุ่มปิดงาน)
-    // ==========================================
     router.put('/orders/:id/verify', async (req, res) => {
         const { id } = req.params;
-        const client = await pool.connect();
-        
         try {
-            await client.query('BEGIN');
-
-            const checkOrder = await client.query('SELECT id FROM orders WHERE id = $1', [id]);
-            if (checkOrder.rowCount === 0) {
-                await client.query('ROLLBACK');
-                return res.status(404).json({ error: "Order not found" });
-            }
-
-            // อัปเดตสถานะในตาราง orders เป็น 'completed'
             const updateQuery = `
                 UPDATE orders 
-                SET status = 'completed' 
-                WHERE id = $1 
+                SET accounting_status = 'approved' 
+                WHERE id = $1 AND (accounting_status IS NULL OR accounting_status != 'approved')
                 RETURNING id;
             `;
-            await client.query(updateQuery, [id]);
-
-            await client.query('COMMIT');
-
-            // แจ้งเตือนแบบ Real-time ผ่าน Socket.io ไปยังทุก Client (ถ้าต้องการ)
-            if (io) {
-                io.emit('order_completed', { order_id: id });
+            const result = await pool.query(updateQuery, [id]);
+            
+            if (result.rowCount === 0) {
+                return res.status(400).json({ error: "ออเดอร์นี้ถูกยืนยันการชำระเงินไปเรียบร้อยแล้วโดยผู้ใช้งานท่านอื่น" });
             }
 
-            res.json({ message: "อัปเดตสถานะปิดงานสำเร็จ", order_id: id });
+            res.json({ message: "ยืนยันการชำระเงินสำเร็จ", order_id: id });
         } catch (error) {
-            await client.query('ROLLBACK');
-            console.error("Error verifying order:", error);
+            console.error("Error verifying payment:", error);
             res.status(500).json({ error: "Internal Server Error" });
-        } finally {
-            client.release();
         }
     });
 
