@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ระบบผู้ดูแลระบบ - Admin Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Kanit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="./css/ad.css">
+  </head>
+  <body>
+    <!-- Sidebar Navigation -->
+    <aside>
+      <div class="brand-container">
+        <div class="brand-icon">
+          <i data-lucide="shield-check"></i>
+        </div>
+        <div>
+          <div class="brand-title">Admin Portal</div>
+          <div class="brand-subtitle">ระบบจัดการหลังบ้าน</div>
+        </div>
+      </div>
+
+      <div class="nav-menu">
+        <button class="nav-item active" onclick="switchTab('dashboard', this)">
+          <i data-lucide="layout-dashboard"></i>
+          <span>ติดตามกิจกรรมและสถานะ</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('users', this)">
+          <i data-lucide="users"></i>
+          <span>จัดการผู้ใช้งานระบบ</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('products', this)">
+          <i data-lucide="package-plus"></i>
+          <span>เพิ่มสินค้าเข้าคลัง</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('analytics', this)">
+          <i data-lucide="bar-chart-3"></i>
+          <span>สถิติและประวัติออเดอร์</span>
+        </button>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="admin-profile">
+          <div class="admin-avatar">AD</div>
+          <div class="admin-info">
+            <h4>ผู้ดูแลระบบ</h4>
+            <p>admin@company.com</p>
+          </div>
+        </div>
+        <button
+          class="btn btn-outline"
+          style="padding: 6px; border: none"
+          title="ออกจากระบบ"
+          onclick="location.href = 'login.html'"
+        >
+          <i
+            data-lucide="log-out"
+            style="width: 18px; height: 18px; color: var(--danger)"
+          ></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main>
+      <header>
+        <div class="header-title">
+          <h1 id="page-heading">ติดตามกิจกรรมและสถานะ</h1>
+          <p id="page-subheading">
+            ภาพรวมการดำเนินงานและกิจกรรมล่าสุดในระบบแบบเรียลไทม์
+          </p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-outline" onclick="location.reload()">
+            <i data-lucide="rotate-cw" style="width: 16px; height: 16px"></i>
+            <span>รีเฟรชข้อมูล</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="content-body">
+        <!-- 1. TAB: ดึงกิจกรรม / สถานะสินค้า -->
+        <div id="dashboard" class="tab-content active">
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">ออเดอร์รอดำเนินการ</span>
+                <div class="metric-icon blue"><i data-lucide="clock"></i></div>
+              </div>
+              <div class="metric-value">12</div>
+              <div class="metric-footer">
+                <i data-lucide="trending-up" style="width: 14px"></i>
+                อัปเดตล่าสุดเรียลไทม์
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">กำลังตรวจสอบสินค้า</span>
+                <div class="metric-icon orange">
+                  <i data-lucide="shield-alert"></i>
+                </div>
+              </div>
+              <div class="metric-value">4</div>
+              <div class="metric-footer">มีพนักงานกำลังล็อคตรวจ</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">จัดส่งสำเร็จวันนี้</span>
+                <div class="metric-icon green">
+                  <i data-lucide="check-circle-2"></i>
+                </div>
+              </div>
+              <div class="metric-value">38</div>
+              <div class="metric-footer">
+                <i
+                  data-lucide="arrow-up-right"
+                  style="width: 14px; color: var(--ok)"
+                ></i>
+                เพิ่มขึ้นจากเมื่อวาน
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">สินค้าในคลังใกล้หมด</span>
+                <div class="metric-icon red">
+                  <i data-lucide="alert-triangle"></i>
+                </div>
+              </div>
+              <div class="metric-value">2</div>
+              <div class="metric-footer">ต้องทำการเติมสต็อกด่วน</div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h3 class="panel-title">กิจกรรมสถานะสินค้าล่าสุด</h3>
+              <span class="badge info"
+                ><i data-lucide="activity" style="width: 12px"></i> Live
+                Feed</span
+              >
+            </div>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>รหัสออเดอร์</th>
+                    <th>ผู้ปฏิบัติงาน</th>
+                    <th>แผนก</th>
+                    <th>รหัสรถ</th>
+                    <th>สถานะปัจจุบัน</th>
+                    <th>ขั้นตอนเชิงลึก</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>#10492</strong></td>
+                    <td>สมชาย ใจดี</td>
+                    <td>Warehouse</td>
+                    <td>CAR-02</td>
+                    <td>
+                      <span class="badge ok"
+                        ><i data-lucide="check" style="width: 12px"></i>
+                        ปล่อยรถเรียบร้อย</span
+                      >
+                    </td>
+                    <td>
+                      <button
+                        class="btn btn-outline btn-sm"
+                        onclick="
+                          openTimelineModal(
+                            '10492',
+                            'สมชาย ใจดี',
+                            'CAR-02',
+                            'completed',
+                          )
+                        "
+                      >
+                        <i
+                          data-lucide="git-commit"
+                          style="width: 14px; height: 14px"
+                        ></i>
+                        <span>ดูขั้นตอน</span>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>#10491</strong></td>
+                    <td>วิชัย มั่นคง</td>
+                    <td>Checker</td>
+                    <td>CAR-01</td>
+                    <td>
+                      <span class="badge warn"
+                        ><i data-lucide="lock" style="width: 12px"></i>
+                        กำลังตรวจสอบ</span
+                      >
+                    </td>
+                    <td>
+                      <button
+                        class="btn btn-outline btn-sm"
+                        onclick="
+                          openTimelineModal(
+                            '10491',
+                            'วิชัย มั่นคง',
+                            'CAR-01',
+                            'current',
+                          )
+                        "
+                      >
+                        <i
+                          data-lucide="git-commit"
+                          style="width: 14px; height: 14px"
+                        ></i>
+                        <span>ดูขั้นตอน</span>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>#10490</strong></td>
+                    <td>กรวิกานต์ สุขี</td>
+                    <td>Warehouse</td>
+                    <td>CAR-03</td>
+                    <td>
+                      <span class="badge info"
+                        ><i data-lucide="package" style="width: 12px"></i>
+                        รอตรวจสอบสลิป</span
+                      >
+                    </td>
+                    <td>
+                      <button
+                        class="btn btn-outline btn-sm"
+                        onclick="
+                          openTimelineModal(
+                            '10490',
+                            'กรวิกานต์ สุขี',
+                            'CAR-03',
+                            'waiting',
+                          )
+                        "
+                      >
+                        <i
+                          data-lucide="git-commit"
+                          style="width: 14px; height: 14px"
+                        ></i>
+                        <span>ดูขั้นตอน</span>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. TAB: เพิ่มผู้ใช้ระบบ -->
+        <div id="users" class="tab-content">
+          <div class="panel">
+            <div class="panel-header">
+              <h3 class="panel-title">ลงทะเบียนบัญชีผู้ใช้งานใหม่</h3>
+              <i data-lucide="user-plus" style="color: var(--ink-soft)"></i>
+            </div>
+            <form onsubmit="handleUserSubmit(event)">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">ชื่อ - นามสกุล</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="ระบุชื่อจริง นามสกุล"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">ชื่อผู้ใช้งาน (Username)</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="ชื่อสำหรับเข้าสู่ระบบ"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">รหัสผ่าน</label>
+                  <input
+                    type="password"
+                    class="form-control"
+                    placeholder="รหัสผ่านปลอดภัย"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">แผนก / สิทธิ์การใช้งาน</label>
+                  <select class="form-control" required>
+                    <option value="">เลือกแผนก</option>
+                    <option value="Warehouse">Warehouse (คลังสินค้า)</option>
+                    <option value="Checker">Checker (ตรวจสอบและปล่อยรถ)</option>
+                    <option value="Admin">Admin (ผู้ดูแลระบบ)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="reset" class="btn btn-outline">ล้างฟอร์ม</button>
+                <button type="submit" class="btn btn-primary">
+                  <i data-lucide="save" style="width: 16px; height: 16px"></i>
+                  <span>บันทึกผู้ใช้งาน</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h3 class="panel-title">รายชื่อผู้ใช้งานทั้งหมดในระบบ</h3>
+            </div>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ชื่อ-นามสกุล</th>
+                    <th>Username</th>
+                    <th>แผนก</th>
+                    <th>สถานะ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>สมชาย ใจดี</td>
+                    <td>somchai_j</td>
+                    <td>Warehouse</td>
+                    <td><span class="badge ok">ใช้งานปกติ</span></td>
+                  </tr>
+                  <tr>
+                    <td>วิชัย มั่นคง</td>
+                    <td>wichai_m</td>
+                    <td>Checker</td>
+                    <td><span class="badge ok">ใช้งานปกติ</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. TAB: เพิ่มสินค้าเข้าระบบ -->
+        <div id="products" class="tab-content">
+          <div class="panel">
+            <div class="panel-header">
+              <h3 class="panel-title">
+                ลงทะเบียนสินค้าหรือวัตถุดิบใหม่เข้าคลัง
+              </h3>
+              <i data-lucide="package-plus" style="color: var(--ink-soft)"></i>
+            </div>
+            <form onsubmit="handleProductSubmit(event)">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">รหัสสินค้า / SKU</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="เช่น PRD-001"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">ชื่อสินค้า</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="ระบุชื่อสินค้า"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">จำนวนเริ่มต้น</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    placeholder="0"
+                    min="0"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">หน่วยนับ</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="เช่น ชิ้น, กล่อง, แพ็ก"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="reset" class="btn btn-outline">ล้างฟอร์ม</button>
+                <button type="submit" class="btn btn-primary">
+                  <i
+                    data-lucide="plus-circle"
+                    style="width: 16px; height: 16px"
+                  ></i>
+                  <span>เพิ่มสินค้าเข้าคลัง</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- 4. TAB: สถิติและประวัติออเดอร์ -->
+        <div id="analytics" class="tab-content">
+          <div class="panel">
+            <div class="panel-header">
+              <h3 class="panel-title">ประวัติรายการออเดอร์ย้อนหลัง</h3>
+              <div style="display: flex; gap: 10px">
+                <input
+                  type="date"
+                  class="form-control"
+                  style="padding: 6px 10px; font-size: 13px"
+                />
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>รหัสออเดอร์</th>
+                    <th>ผู้ตรวจสอบ</th>
+                    <th>รหัสรถขนส่ง</th>
+                    <th>เวลาออกเดินทาง</th>
+                    <th>หมายเหตุ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>#10488</strong></td>
+                    <td>วิชัย มั่นคง</td>
+                    <td>CAR-01</td>
+                    <td>2026-09-22 11:30:00</td>
+                    <td>จัดส่งเรียบร้อยครบถ้วน</td>
+                  </tr>
+                  <tr>
+                    <td><strong>#10487</strong></td>
+                    <td>วิชัย มั่นคง</td>
+                    <td>CAR-04</td>
+                    <td>2026-09-22 10:15:00</td>
+                    <td>-</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modal สำหรับแสดงขั้นตอนเชิงลึก (Timeline) ของออเดอร์ -->
+    <div
+      id="timelineModal"
+      class="modal-overlay"
+      onclick="closeTimelineModal(event)"
+    >
+      <div class="modal-container" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title" id="modalOrderTitle">
+              ติดตามสถานะเชิงลึก: #-----
+            </h3>
+            <p
+              style="font-size: 12px; color: var(--ink-soft)"
+              id="modalOrderSub"
+            >
+              ผู้ปฏิบัติงาน: - | รหัสรถ: -
+            </p>
+          </div>
+          <button class="modal-close-btn" onclick="closeTimelineModal()">
+            <i data-lucide="x" style="width: 20px; height: 20px"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="timeline" id="timelineContent">
+            <!-- จะถูกเติมข้อมูลด้วย JavaScript ตามสถานะออเดอร์ -->
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="./js/ad.js"></script>
+  </body>
+</html>
