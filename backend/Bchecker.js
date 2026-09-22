@@ -29,6 +29,7 @@ module.exports = function (pool, io) {
   const router = express.Router();
 
   // 1. ดึงรายการออเดอร์ (กรองเฉพาะที่ยังไม่ถูกตรวจสอบ และตัดออเดอร์ที่มี payment_slip ออกเพราะมีคนรับไปแล้ว)
+  // 1. ดึงรายการออเดอร์ (กรองเฉพาะที่เลือกพนักงาน/รหัสรถแล้ว, ยังไม่ถูกตรวจสอบ และตัดออเดอร์ที่มี payment_slip ออก)
   router.get("/orders", async (req, res) => {
     try {
       // อัปเดตปลดล็อคอัตโนมัติหาก locked_at ผ่านไปนานกว่า 2 นาที
@@ -49,6 +50,10 @@ module.exports = function (pool, io) {
         LEFT JOIN public.order_checks oc ON o.id = oc.order_id
         WHERE oc.order_id IS NULL
           AND (o.payment_slip IS NULL OR o.payment_slip = '')
+          -- 🛠️ เพิ่มเงื่อนไขกรอง: ต้องเลือกและระบุรหัสรถแล้วเท่านั้น (ไม่เป็นค่าว่างหรือคำว่ายังไม่ระบุ)
+          AND o.vehicle_selection IS NOT NULL 
+          AND TRIM(o.vehicle_selection) != '' 
+          AND o.vehicle_selection != 'ยังไม่ระบุรหัสรถ'
         ORDER BY o.id DESC
       `;
       const result = await pool.query(query);
@@ -86,11 +91,9 @@ module.exports = function (pool, io) {
         const diffMinutes = (now - lockTime) / 1000 / 60;
 
         if (diffMinutes < 2) {
-          return res
-            .status(400)
-            .json({
-              error: `ออเดอร์นี้กำลังถูกตรวจสอบโดย ${order.locked_by} อยู่ในขณะนี้`,
-            });
+          return res.status(400).json({
+            error: `ออเดอร์นี้กำลังถูกตรวจสอบโดย ${order.locked_by} อยู่ในขณะนี้`,
+          });
         }
       }
 
@@ -241,12 +244,10 @@ module.exports = function (pool, io) {
         });
       } catch (err) {
         console.error("Error submitting dispatch:", err);
-        res
-          .status(500)
-          .json({
-            success: false,
-            error: "ไม่สามารถบันทึกข้อมูลได้: " + err.message,
-          });
+        res.status(500).json({
+          success: false,
+          error: "ไม่สามารถบันทึกข้อมูลได้: " + err.message,
+        });
       }
     },
   );
