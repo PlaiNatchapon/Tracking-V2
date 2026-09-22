@@ -1,208 +1,160 @@
-   // เริ่มต้นเรนเดอร์ไอคอน Lucide ทั้งหมด
-      lucide.createIcons();
+// เริ่มต้นเรนเดอร์ไอคอน Lucide ทั้งหมด
+lucide.createIcons();
 
-      function switchTab(tabId, buttonElement) {
-        document.querySelectorAll(".tab-content").forEach((tab) => {
-          tab.classList.remove("active");
-        });
-        document.querySelectorAll(".nav-item").forEach((btn) => {
-          btn.classList.remove("active");
-        });
+// โหลดข้อมูลอัตโนมัติเมื่อเปิดหน้าเว็บ
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("DOM Loaded - กำลังเรียกใช้งาน loadDashboardData()");
+    loadDashboardData();
+});
 
-        document.getElementById(tabId).classList.add("active");
-        buttonElement.classList.add("active");
+// ตรวจสอบและเชื่อมต่อ Socket.io (ใช้ตัวแปรส่วนกลาง หรือเชื่อมต่อใหม่โดยไม่ใช้คำสั่ง const ซ้ำ)
+window.socket = window.socket || io();
 
-        const headings = {
-          dashboard: {
+window.socket.on("orderUpdated", (data) => {
+    console.log("ได้รับข้อมูลอัปเดตแบบ Real-time:", data);
+    loadDashboardData();
+});
+
+window.socket.on("newOrderAdmin", (data) => {
+    console.log("มีออเดอร์ใหม่เข้ามาแบบ Real-time:", data);
+    loadDashboardData();
+});
+
+function switchTab(tabId, buttonElement) {
+    document.querySelectorAll(".tab-content").forEach((tab) => {
+        tab.classList.remove("active");
+    });
+    document.querySelectorAll(".nav-item").forEach((btn) => {
+        btn.classList.remove("active");
+    });
+
+    document.getElementById(tabId).classList.add("active");
+    buttonElement.classList.add("active");
+
+    const headings = {
+        dashboard: {
             title: "ติดตามกิจกรรมและสถานะ",
             sub: "ภาพรวมการดำเนินงานและกิจกรรมล่าสุดในระบบแบบเรียลไทม์",
-          },
-          users: {
+        },
+        users: {
             title: "จัดการผู้ใช้งานระบบ",
             sub: "เพิ่มบัญชีผู้ใช้งาน และกำหนดสิทธิ์การเข้าถึงระบบ",
-          },
-          products: {
+        },
+        products: {
             title: "เพิ่มสินค้าเข้าระบบ",
             sub: "ลงทะเบียนสินค้าหรือวัตถุดิบใหม่เข้าสู่คลังสินค้า",
-          },
-          analytics: {
+        },
+        analytics: {
             title: "สถิติและประวัติออเดอร์",
             sub: "ตรวจสอบประวัติย้อนหลังและรายงานสรุปผลงาน",
-          },
-        };
+        },
+    };
 
-        if (headings[tabId]) {
-          document.getElementById("page-heading").textContent =
-            headings[tabId].title;
-          document.getElementById("page-subheading").textContent =
-            headings[tabId].sub;
-        }
-      }
-
-
-      function handleLogout() {
-  localStorage.clear();
-  window.location.replace("login.html");
-  if (window.history && window.history.pushState) {
-    window.history.replaceState(null, null, "login.html");
-  }
+    if (headings[tabId]) {
+        document.getElementById("page-heading").textContent = headings[tabId].title;
+        document.getElementById("page-subheading").textContent = headings[tabId].sub;
+    }
 }
 
-      function handleUserSubmit(event) {
-        event.preventDefault();
-        alert("บันทึกผู้ใช้งานใหม่เรียบร้อยแล้ว");
-        event.target.reset();
-      }
+function handleLogout() {
+    localStorage.clear();
+    window.location.replace("login.html");
+}
 
-      function handleProductSubmit(event) {
-        event.preventDefault();
-        alert("เพิ่มสินค้าเข้าคลังเรียบร้อยแล้ว");
-        event.target.reset();
-      }
+function handleUserSubmit(event) {
+    event.preventDefault();
+    alert("บันทึกผู้ใช้งานใหม่เรียบร้อยแล้ว");
+    event.target.reset();
+}
 
-      // ฟังก์ชันเปิด Modal แสดงขั้นตอนเชิงลึก (Timeline)
-      function openTimelineModal(orderId, operator, vehicle, statusType) {
-        document.getElementById("modalOrderTitle").textContent =
-          `ติดตามสถานะเชิงลึก: #${orderId}`;
-        document.getElementById("modalOrderSub").textContent =
-          `ผู้ปฏิบัติงาน: ${operator} | รหัสรถ: ${vehicle}`;
+function handleProductSubmit(event) {
+    event.preventDefault();
+    alert("เพิ่มสินค้าเข้าคลังเรียบร้อยแล้ว");
+    event.target.reset();
+}
 
-        const timelineContainer = document.getElementById("timelineContent");
+// ฟังก์ชันเปิด Modal Timeline
+function openTimelineModal(orderId, department, operator, vehicle, statusText) {
+    document.getElementById("modalOrderTitle").textContent = `สถานะออเดอร์: #${orderId}`;
+    document.getElementById("modalOrderSub").textContent = `ผู้ปฏิบัติงาน: ${operator} | รหัสรถ: ${vehicle}`;
 
-        let stepsHtml = "";
+    const timelineContainer = document.getElementById("timelineContent");
+    
+    timelineContainer.innerHTML = `
+        <div class="timeline-item current">
+            <div class="timeline-dot"></div>
+            <div class="timeline-title">แผนกปัจจุบัน: ${department || 'ไม่ระบุ'}</div>
+            <div class="timeline-desc">สถานะการดำเนินงาน: ${statusText || 'กำลังดำเนินการ'}</div>
+            <div class="timeline-time">อัปเดตจากระบบปัจจุบัน</div>
+        </div>
+    `;
 
-        if (statusType === "completed") {
-          stepsHtml = `
-                    <div class="timeline-item completed">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-title">1. สร้างออเดอร์เข้าสู่ระบบ</div>
-                        <div class="timeline-desc">ระบบบันทึกรายการสั่งซื้อสำเร็จ เตรียมพร้อมจัดสรรงาน</div>
-                        <div class="timeline-time">13:30 น.</div>
-                    </div>
-                    <div class="timeline-item completed">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-title">2. เลือกและระบุรหัสรถขนส่ง (${vehicle})</div>
-                        <div class="timeline-desc">ระบุข้อมูลรถและจัดสรรสายส่งเรียบร้อย</div>
-                        <div class="timeline-time">13:45 น.</div>
-                    </div>
-                    <div class="timeline-item completed">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-title">3. ตรวจสอบความถูกต้องและสลิปการโอน</div>
-                        <div class="timeline-desc">พนักงาน Checker ตรวจสอบรายการและยืนยันความถูกต้องผ่านระบบ</div>
-                        <div class="timeline-time">14:05 น.</div>
-                    </div>
-                    <div class="timeline-item completed">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-title">4. ปล่อยรถออกเดินทางสำเร็จ</div>
-                        <div class="timeline-desc">กระบวนการเสร็จสิ้นสมบูรณ์ รถขนส่งเดินทางออกจากคลังสินค้า</div>
-                        <div class="timeline-time">14:25 น.</div>
-                    </div>
-                `;
-        } else if (statusType === "current") {
-          stepsHtml = `
-                    <div class="timeline-item completed">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-title">1. สร้างออเดอร์เข้าสู่ระบบ</div>
-                        <div class="timeline-desc">ระบบบันทึกรายการสั่งซื้อสำเร็จ</div>
-                        <div class="timeline-time">13:30 น.</div>
-                    </div>
-                    <div class="timeline-item completed">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-title">2. เลือกและระบุรหัสรถขนส่ง (${vehicle})</div>
-                        <div class="timeline-desc">ระบุข้อมูลรถเรียบร้อย</div>
-                        <div class="timeline-time">13:50 น.</div>
-                    </div>
-                    <div class="timeline-item current">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-title">3. กำลังตรวจสอบรายการสินค้า (กำลังดำเนินการ)</div>
-                        <div class="timeline-desc">พนักงานกำลังปฏิบัติงานล็อคตรวจในระบบ Bacc</div>
-                        <div class="timeline-time">กำลังดำเนินงาน...</div>
-                    </div>
-                    <div class="timeline-item pending">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-title">4. ปล่อยรถออกเดินทาง</div>
-                        <div class="timeline-desc">รอการยืนยันเสร็จสิ้นเพื่อปล่อยรถขนส่ง</div>
-                        <div class="timeline-time">-</div>
-                    </div>
-                `;
-        } else {
-          stepsHtml = `
-                    <div class="timeline-item completed">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-title">1. สร้างออเดอร์เข้าสู่ระบบ</div>
-                        <div class="timeline-desc">ระบบบันทึกรายการสั่งซื้อสำเร็จ</div>
-                        <div class="timeline-time">13:40 น.</div>
-                    </div>
-                    <div class="timeline-item current">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-title">2. รอเลือกและระบุรหัสรถขนส่ง</div>
-                        <div class="timeline-desc">ออเดอร์เข้ามาแล้ว อยู่ระหว่างรอดำเนินการเลือกรหัสรถ</div>
-                        <div class="timeline-time">รอดำเนินการ...</div>
-                    </div>
-                    <div class="timeline-item pending">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-title">3. ตรวจสอบความถูกต้องและสลิป</div>
-                        <div class="timeline-desc">-</div>
-                        <div class="timeline-time">-</div>
-                    </div>
-                    <div class="timeline-item pending">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-title">4. ปล่อยรถออกเดินทาง</div>
-                        <div class="timeline-desc">-</div>
-                        <div class="timeline-time">-</div>
-                    </div>
-                `;
-        }
+    document.getElementById("timelineModal").classList.add("active");
+    lucide.createIcons();
+}
 
-        timelineContainer.innerHTML = stepsHtml;
-        document.getElementById("timelineModal").classList.add("active");
-        lucide.createIcons();
-      }
+// ปิด Modal
+function closeTimelineModal() {
+    document.getElementById("timelineModal").classList.remove("active");
+}
 
-      // ปิด Modal
-      function closeTimelineModal() {
-        document.getElementById("timelineModal").classList.remove("active");
-      }
-
-      // ฟังก์ชันโหลดข้อมูลจากหลังบ้าน
+// ฟังก์ชันโหลดข้อมูลจากหลังบ้าน
 async function loadDashboardData() {
+    console.log("กำลังเชื่อมต่อเพื่อดึงข้อมูลจาก API (/api/orders)...");
     try {
         const response = await fetch('/api/orders');
+        console.log("สถานะ Response จากเซิร์ฟเวอร์:", response.status);
+        
         const result = await response.json();
+        console.log("ข้อมูล JSON ที่ได้รับ:", result);
 
-        if (result.success) {
-            const ordersData = result.data;
-            const tbody = document.querySelector("#dashboard tbody");
-            if (!tbody) return;
-
-            let html = "";
-            ordersData.forEach(order => {
-                html += `
-                    <tr>
-                        <td><strong>#${order.id}</strong></td>
-                        <td>${order.operator}</td>
-                        <td>${order.department}</td>
-                        <td>${order.vehicle}</td>
-                        <td>
-                            <span class="badge ${order.badgeClass}">
-                                <i data-lucide="${order.icon}" style="width: 12px"></i>
-                                ${order.statusText}
-                            </span>
-                        </td>
-                        <td>
-                            <button class="btn btn-outline btn-sm" onclick="openTimelineModal('${order.id}', '${order.operator}', '${order.vehicle}', '${order.status}')">
-                                <i data-lucide="git-commit" style="width: 14px; height: 14px"></i>
-                                <span>ดูขั้นตอน</span>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            tbody.innerHTML = html;
-            lucide.createIcons();
+        let ordersData = [];
+        if (Array.isArray(result)) {
+            ordersData = result;
+        } else if (result.data && Array.isArray(result.data)) {
+            ordersData = result.data;
         }
+
+        const tbody = document.querySelector("#dashboard table tbody");
+        if (!tbody) {
+            console.warn("ไม่พบ Element tbody ในตาราง Dashboard");
+            return;
+        }
+
+        if (ordersData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--ink-soft);">ยังไม่มีข้อมูลออเดอร์ในระบบฐานข้อมูล</td></tr>`;
+            return;
+        }
+
+        let html = "";
+        ordersData.forEach(order => {
+            html += `
+                <tr>
+                    <td><strong>#${order.id}</strong></td>
+                    <td>${order.operator || '-'}</td>
+                    <td>${order.department || '-'}</td>
+                    <td>${order.vehicle || '-'}</td>
+                    <td>
+                        <span class="badge ${order.badgeClass || 'badge-warning'}">
+                            <i data-lucide="${order.icon || 'clock'}" style="width: 12px"></i>
+                            ${order.statusText || 'กำลังดำเนินการ'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-outline btn-sm" onclick="openTimelineModal('${order.id}', '${order.department}', '${order.operator}', '${order.vehicle}', '${order.statusText}')">
+                            <i data-lucide="git-commit" style="width: 14px; height: 14px"></i>
+                            <span>ดูขั้นตอน</span>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+        lucide.createIcons();
+        console.log("โหลดข้อมูลลงตารางสำเร็จเรียบร้อย");
+
     } catch (err) {
-        console.error("ไม่สามารถเชื่อมต่อ API ได้:", err);
+        console.error("เกิดข้อผิดพลาดในการเชื่อมต่อ API:", err);
     }
 }

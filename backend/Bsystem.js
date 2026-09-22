@@ -3,38 +3,61 @@ const express = require('express');
 module.exports = function(pool, io) {
     const router = express.Router();
 
-    // 1. ดึงข้อมูลออเดอร์ทั้งหมด
-    router.get('/', async (req, res) => {
-        try {
-            const query = `
-                SELECT 
-                    id AS "id",
-                    operator_name AS "operator",
-                    department AS "department",
-                    vehicle_code AS "vehicle",
-                    status AS "status",
-                    status_text AS "statusText",
-                    badge_class AS "badgeClass",
-                    icon AS "icon"
-                FROM orders
-                ORDER BY id DESC;
-            `;
-            
-            const result = await pool.query(query);
-            
-            res.json({
-                success: true,
-                data: result.rows
-            });
-
-        } catch (err) {
-            console.error("Error fetching orders from Badmin.js:", err.message);
-            res.status(500).json({ 
-                success: false, 
-                error: "เกิดข้อผิดพลาดในการดึงข้อมูลออเดอร์" 
-            });
-        }
-    });
+router.get('/orders', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                o.id AS "id",
+                COALESCE(
+                    dc.delivery_person_name, 
+                    oc.checker_name, 
+                    of_fill.fullname, 
+                    o.employee_name, 
+                    'ไม่ระบุ'
+                ) AS "operator",
+                COALESCE(
+                    dc.delivery_department, 
+                    oc.department, 
+                    of_fill.department, 
+                    o.department, 
+                    'Warehouse'
+                ) AS "department",
+                COALESCE(
+                    oc.vehicle_selection, 
+                    o.vehicle_selection, 
+                    'ไม่ระบุ'
+                ) AS "vehicle",
+                CASE 
+                    WHEN dc.id IS NOT NULL THEN 'จัดส่งสำเร็จ'
+                    WHEN oc.id IS NOT NULL THEN 'ตรวจสอบ/ปล่อยรถแล้ว'
+                    WHEN of_fill.id IS NOT NULL THEN 'กำลังแพ็คสินค้า'
+                    ELSE 'รอดำเนินการ'
+                END AS "statusText",
+                CASE 
+                    WHEN dc.id IS NOT NULL THEN 'badge-success'
+                    WHEN oc.id IS NOT NULL THEN 'badge-info'
+                    WHEN of_fill.id IS NOT NULL THEN 'badge-warning'
+                    ELSE 'badge-secondary'
+                END AS "badgeClass",
+                CASE 
+                    WHEN dc.id IS NOT NULL THEN 'check-circle-2'
+                    WHEN oc.id IS NOT NULL THEN 'truck'
+                    WHEN of_fill.id IS NOT NULL THEN 'package'
+                    ELSE 'clock'
+                END AS "icon"
+            FROM orders o
+            LEFT JOIN order_fulfillments of_fill ON o.id = of_fill.order_id
+            LEFT JOIN order_checks oc ON o.id = oc.order_id
+            LEFT JOIN delivery_results dc ON o.id = dc.order_id
+            ORDER BY o.id DESC;
+        `;
+        const result = await pool.query(query);
+        res.json({ success: true, data: result.rows });
+    } catch (err) {
+        console.error("Error fetching detailed orders:", err.message);
+        res.status(500).json({ success: false, error: "เกิดข้อผิดพลาดในการดึงข้อมูลสถานะออเดอร์แบบละเอียด" });
+    }
+});
 
     // 2. ดึงข้อมูล Timeline ของออเดอร์เฉพาะเจาะจง
     router.get('/:id/timeline', async (req, res) => {
@@ -74,9 +97,10 @@ module.exports = function(pool, io) {
             const result = await pool.query(query, values);
             const newOrder = result.rows[0];
 
-            // ถ้าระบบมีการตั้งค่า io ไว้ สามารถ broadcast แจ้งเตือนหน้าจออื่นได้ทันที
+            // ส่งสัญญาณแจ้งเตือนไปยังหน้าบ้านทุกเครื่องทันทีแบบ Real-time
             if (io) {
                 io.emit("newOrderAdmin", newOrder);
+                io.emit("orderUpdated", { type: 'INSERT', data: newOrder });
             }
 
             res.status(201).json({

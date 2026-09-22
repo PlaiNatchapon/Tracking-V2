@@ -62,7 +62,7 @@
           class="btn btn-outline"
           style="padding: 6px; border: none"
           title="ออกจากระบบ"
-         onclick="handleLogout()"
+          onclick="handleLogout()"
         >
           <i
             data-lucide="log-out"
@@ -163,99 +163,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td><strong>#10492</strong></td>
-                    <td>สมชาย ใจดี</td>
-                    <td>Warehouse</td>
-                    <td>CAR-02</td>
-                    <td>
-                      <span class="badge ok"
-                        ><i data-lucide="check" style="width: 12px"></i>
-                        ปล่อยรถเรียบร้อย</span
-                      >
-                    </td>
-                    <td>
-                      <button
-                        class="btn btn-outline btn-sm"
-                        onclick="
-                          openTimelineModal(
-                            '10492',
-                            'สมชาย ใจดี',
-                            'CAR-02',
-                            'completed',
-                          )
-                        "
-                      >
-                        <i
-                          data-lucide="git-commit"
-                          style="width: 14px; height: 14px"
-                        ></i>
-                        <span>ดูขั้นตอน</span>
-                      </button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><strong>#10491</strong></td>
-                    <td>วิชัย มั่นคง</td>
-                    <td>Checker</td>
-                    <td>CAR-01</td>
-                    <td>
-                      <span class="badge warn"
-                        ><i data-lucide="lock" style="width: 12px"></i>
-                        กำลังตรวจสอบ</span
-                      >
-                    </td>
-                    <td>
-                      <button
-                        class="btn btn-outline btn-sm"
-                        onclick="
-                          openTimelineModal(
-                            '10491',
-                            'วิชัย มั่นคง',
-                            'CAR-01',
-                            'current',
-                          )
-                        "
-                      >
-                        <i
-                          data-lucide="git-commit"
-                          style="width: 14px; height: 14px"
-                        ></i>
-                        <span>ดูขั้นตอน</span>
-                      </button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><strong>#10490</strong></td>
-                    <td>กรวิกานต์ สุขี</td>
-                    <td>Warehouse</td>
-                    <td>CAR-03</td>
-                    <td>
-                      <span class="badge info"
-                        ><i data-lucide="package" style="width: 12px"></i>
-                        รอตรวจสอบสลิป</span
-                      >
-                    </td>
-                    <td>
-                      <button
-                        class="btn btn-outline btn-sm"
-                        onclick="
-                          openTimelineModal(
-                            '10490',
-                            'กรวิกานต์ สุขี',
-                            'CAR-03',
-                            'waiting',
-                          )
-                        "
-                      >
-                        <i
-                          data-lucide="git-commit"
-                          style="width: 14px; height: 14px"
-                        ></i>
-                        <span>ดูขั้นตอน</span>
-                      </button>
-                    </td>
-                  </tr>
+                  <!-- ข้อมูลจากฐานข้อมูลจะถูกโหลดมาแสดงที่นี่ผ่าน JavaScript -->
                 </tbody>
               </table>
             </div>
@@ -316,38 +224,6 @@
                 </button>
               </div>
             </form>
-          </div>
-
-          <div class="panel">
-            <div class="panel-header">
-              <h3 class="panel-title">รายชื่อผู้ใช้งานทั้งหมดในระบบ</h3>
-            </div>
-            <div class="table-responsive">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ชื่อ-นามสกุล</th>
-                    <th>Username</th>
-                    <th>แผนก</th>
-                    <th>สถานะ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>สมชาย ใจดี</td>
-                    <td>somchai_j</td>
-                    <td>Warehouse</td>
-                    <td><span class="badge ok">ใช้งานปกติ</span></td>
-                  </tr>
-                  <tr>
-                    <td>วิชัย มั่นคง</td>
-                    <td>wichai_m</td>
-                    <td>Checker</td>
-                    <td><span class="badge ok">ใช้งานปกติ</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
           </div>
         </div>
 
@@ -419,13 +295,6 @@
           <div class="panel">
             <div class="panel-header">
               <h3 class="panel-title">ประวัติรายการออเดอร์ย้อนหลัง</h3>
-              <div style="display: flex; gap: 10px">
-                <input
-                  type="date"
-                  class="form-control"
-                  style="padding: 6px 10px; font-size: 13px"
-                />
-              </div>
             </div>
             <div class="table-responsive">
               <table>
@@ -435,23 +304,11 @@
                     <th>ผู้ตรวจสอบ</th>
                     <th>รหัสรถขนส่ง</th>
                     <th>เวลาออกเดินทาง</th>
-                    <th>หมายเหตุ</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td><strong>#10488</strong></td>
-                    <td>วิชัย มั่นคง</td>
-                    <td>CAR-01</td>
-                    <td>2026-09-22 11:30:00</td>
-                    <td>จัดส่งเรียบร้อยครบถ้วน</td>
-                  </tr>
-                  <tr>
-                    <td><strong>#10487</strong></td>
-                    <td>วิชัย มั่นคง</td>
-                    <td>CAR-04</td>
-                    <td>2026-09-22 10:15:00</td>
-                    <td>-</td>
+                    <td colspan="4" style="text-align: center; color: var(--ink-soft);">กำลังพัฒนาส่วนประวัติย้อนหลัง</td>
                   </tr>
                 </tbody>
               </table>
@@ -461,7 +318,7 @@
       </div>
     </main>
 
-    <!-- Modal สำหรับแสดงขั้นตอนเชิงลึก (Timeline) ของออเดอร์ -->
+    <!-- Modal สำหรับแสดงขั้นตอนเชิงลึก (Timeline) -->
     <div
       id="timelineModal"
       class="modal-overlay"
@@ -486,11 +343,13 @@
         </div>
         <div class="modal-body">
           <div class="timeline" id="timelineContent">
-            <!-- จะถูกเติมข้อมูลด้วย JavaScript ตามสถานะออเดอร์ -->
+            <!-- ข้อมูล Timeline -->
           </div>
         </div>
       </div>
     </div>
+
+    <!-- เรียกไฟล์ JavaScript หลัก -->
     <script src="./js/ad.js"></script>
   </body>
 </html>
