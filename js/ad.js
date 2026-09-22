@@ -39,6 +39,15 @@
         }
       }
 
+
+      function handleLogout() {
+  localStorage.clear();
+  window.location.replace("login.html");
+  if (window.history && window.history.pushState) {
+    window.history.replaceState(null, null, "login.html");
+  }
+}
+
       function handleUserSubmit(event) {
         event.preventDefault();
         alert("บันทึกผู้ใช้งานใหม่เรียบร้อยแล้ว");
