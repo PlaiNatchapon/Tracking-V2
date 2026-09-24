@@ -73,38 +73,60 @@ async function loadDashboardData() {
     let html = "";
     ordersData.forEach((item) => {
       let vehicleVal = item.vehicle_selection || item.vehicle || "";
-      let statusText = item.statusText || item.status || "รอดำเนินการ";
-      let badgeClass = item.badgeClass || "badge-warning";
-      let icon = item.icon || "clock";
+      let rawStatus = item.statusText || item.status || "รอดำเนินการ";
+      
+      let statusText = "รอดำเนินการ";
+      let bgColor = "#e0f2fe";   // ฟ้าอ่อน (ค่าเริ่มต้นสำหรับรอดำเนินการ)
+      let textColor = "#0369a1"; // ฟ้าเข้ม
+      let icon = "clock";
 
-      // 📌 เงื่อนไขที่ 1: ถ้าบัญชียืนยันการชำระเงินแล้ว หรือสถานะเป็นเสร็จสิ้น -> "งานเสร็จสิ้น"
+      // 📌 1. งานเสร็จสิ้น (บัญชียืนยันการชำระเงินแล้ว / สำเร็จ) -> สีเขียว
       if (
         item.status === "accounting_verified" || 
         item.status === "completed" || 
         item.status === "verified" ||
-        statusText.includes("ยืนยันการชำระ") || 
-        statusText.includes("เสร็จสิ้น") ||
-        statusText.includes("accounting_verified")
+        rawStatus.includes("ยืนยันการชำระ") || 
+        rawStatus.includes("เสร็จสิ้น") ||
+        rawStatus.includes("accounting_verified")
       ) {
         statusText = "งานเสร็จสิ้น";
-        badgeClass = "badge-success";
+        bgColor = "#dcfce7";   // เขียวอ่อน
+        textColor = "#166534"; // เขียวเข้ม
         icon = "check-circle-2";
       }
-      // 📌 เงื่อนไขที่ 2: มารับสินค้าเอง (pickup-self) -> "รอฝ่ายบัญชีตรวจสอบครับ"
-      else if (vehicleVal.toLowerCase().includes("pickup") || vehicleVal === "pickup-self") {
-        statusText = "รอฝ่ายบัญชีตรวจสอบครับ";
-        badgeClass = "badge-warning";
-        icon = "clock";
-      } 
-      // 📌 เงื่อนไขที่ 3: Logistic ส่งเสร็จแล้ว -> "รอฝ่ายบัญชีตรวจสอบครับ"
+      // 📌 2. รอฝ่ายบัญชีตรวจสอบ (pickup-self หรือ logistic ส่งเสร็จแล้ว) -> สีส้ม / เหลือง
       else if (
+        vehicleVal.toLowerCase().includes("pickup") || 
+        vehicleVal === "pickup-self" ||
         item.status === "logistic_delivered" || 
         item.status === "delivered" || 
-        statusText.includes("จัดส่ง") ||
+        rawStatus.includes("จัดส่ง") ||
         vehicleVal.toLowerCase().includes("logistic")
       ) {
         statusText = "รอฝ่ายบัญชีตรวจสอบครับ";
-        badgeClass = "badge-warning";
+        bgColor = "#fef9c3";   // เหลืองอ่อน
+        textColor = "#854d0e"; // เหลือง/น้ำตาลเข้ม
+        icon = "clock";
+      }
+      // 📌 3. กำลังตรวจสอบ / ปล่อยรถแล้ว -> สีฟ้าเข้มขึ้นมาหน่อย
+      else if (rawStatus.includes("ตรวจสอบ") || rawStatus.includes("ปล่อยรถ") || item.status === "checker_verified") {
+        statusText = rawStatus.includes("ปล่อยรถ") ? "ปล่อยรถแล้ว" : "กำลังตรวจสอบ";
+        bgColor = "#bae6fd";   // ฟ้าปานกลาง
+        textColor = "#0369a1"; 
+        icon = "truck";
+      }
+      // 📌 4. กำลังแพ็คสินค้า / Fulfillment -> สีม่วง
+      else if (rawStatus.includes("แพ็ค") || rawStatus.includes("fulfillment") || item.status === "warehouse_packed") {
+        statusText = "กำลังแพ็คสินค้า";
+        bgColor = "#f3e8ff";   // ม่วงอ่อน
+        textColor = "#6b21a8"; // ม่วงเข้ม
+        icon = "package";
+      } 
+      // 📌 5. กรณีสถานะอื่นๆ หรือรอดำเนินการทั่วไป -> สีฟ้าพาสเทลสวยๆ
+      else {
+        statusText = rawStatus;
+        bgColor = "#e0f2fe";   // ฟ้าอ่อน
+        textColor = "#0369a1"; // ฟ้าเข้ม
         icon = "clock";
       }
 
@@ -115,8 +137,8 @@ async function loadDashboardData() {
           <td><span class="badge badge-outline">${item.department || "-"}</span></td>
           <td>${vehicleVal}</td>
           <td>
-            <span class="badge ${badgeClass}">
-              <i data-lucide="${icon}" style="width: 12px; height: 12px; margin-right: 4px;"></i>
+            <span style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; font-weight: 500; font-size: 13px; border-radius: 20px; background-color: ${bgColor}; color: ${textColor};">
+              <i data-lucide="${icon}" style="width: 14px; height: 14px;"></i>
               ${statusText}
             </span>
           </td>
