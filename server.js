@@ -54,6 +54,9 @@ const pool = new Pool({
   port: 5432,
 });
 
+const adminRoutes = require("./backend/Bsystem")(pool, io);
+app.use("/api/admin", adminRoutes);
+
 // เรียกใช้ API จากไฟล์แยกต่างๆ
 const authRoutes = require("./backend/Blogin")(pool);
 app.use("/api", authRoutes);
@@ -75,9 +78,7 @@ app.use("/api/checker", checkerRoutes);
 const logisticRoutes = require("./backend/Blogistic")(pool, io);
 app.use("/api/logistic", logisticRoutes);
 
-const adminRoutes = require("./backend/Bsystem")(pool, io);
-app.use("/api/admin", adminRoutes);
-// กำหนดให้เปิดเข้าหน้า login.html ทันทีเมื่อเข้าเว็บพอร์ต 3000
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "login.html"));
 });
@@ -86,7 +87,7 @@ const accountingRoutes = require("./backend/Bacc")(pool, io);
 app.use("/api/accounting", accountingRoutes);
 
 const userRoutes = require("./backend/Busers")(pool);
-app.use("/api/users", userRoutes); // 👈 ผูกเข้ากับ Endpoint /api/users เพื่อให้สอดคล้องกับฝั่งหน้าบ้าน
+app.use("/api/users", userRoutes); //  ผูกเข้ากับ Endpoint /api/users เพื่อให้สอดคล้องกับฝั่งหน้าบ้าน
 
 
 // ⬅️ 6. เปลี่ยนจาก app.listen มาเป็น server.listen แทน

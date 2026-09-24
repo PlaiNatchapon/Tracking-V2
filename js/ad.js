@@ -1,11 +1,11 @@
-// โหลดข้อมูลผู้ใช้เมื่อเปิดหน้าเว็บ หรือสลับมาที่แท็บ users
+// โหลดข้อมูลเมื่อเปิดหน้าเว็บ
 document.addEventListener("DOMContentLoaded", () => {
   console.log("DOM Loaded - กำลังเรียกใช้งานฟังก์ชันเริ่มต้น");
-  loadDashboardData();
+  loadDashboardData(); // โหลดข้อมูลติดตามสถานะกิจกรรม
   loadUsersData(); // โหลดรายชื่อผู้ใช้เตรียมไว้
 });
 
-// ดักฟังการสลับแท็บ เพื่อโหลดข้อมูลผู้ใช้เมื่อกดคลิกแท็บจัดการผู้ใช้
+// ดักฟังการสลับแท็บ
 function switchTab(tabId, buttonElement) {
   document.querySelectorAll(".tab-content").forEach((tab) => {
     tab.classList.remove("active");
@@ -18,7 +18,9 @@ function switchTab(tabId, buttonElement) {
   buttonElement.classList.add("active");
 
   if (tabId === "users") {
-    loadUsersData(); // โหลดรายชื่อผู้ใช้ใหม่ทุกครั้งที่กดเข้าแท็บนี้
+    loadUsersData();
+  } else if (tabId === "dashboard") {
+    loadDashboardData(); // โหลดข้อมูลใหม่เมื่อกลับมาที่หน้าแดชบอร์ด
   }
 
   const headings = {
@@ -48,10 +50,100 @@ function switchTab(tabId, buttonElement) {
 }
 
 // -------------------------------------------------------------------------
+// ระบบติดตามสถานะกิจกรรม (Dashboard & Timeline Tracking)
+// -------------------------------------------------------------------------
+
+// 1. โหลดข้อมูลภาพรวมออเดอร์ทุกขั้นตอน
+async function loadDashboardData() {
+  try {
+    const response = await fetch("/api/admin/orders"); // ตรงกับ server.js ที่ผูกไว้ที่ /api/admin
+    if (!response.ok) throw new Error("ไม่สามารถดึงข้อมูลแดชบอร์ดได้");
+
+    const result = await response.json();
+    const ordersData = result.data || [];
+
+    const tbody = document.getElementById("dashboardTableBody");
+    if (!tbody) return;
+
+    if (ordersData.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--ink-soft);">ยังไม่มีข้อมูลกิจกรรมในระบบ</td></tr>`;
+      return;
+    }
+
+    let html = "";
+    ordersData.forEach((item) => {
+      html += `
+        <tr>
+          <td><strong>#${item.id}</strong></td>
+          <td>${item.operator}</td>
+          <td><span class="badge badge-outline">${item.department}</span></td>
+          <td>${item.vehicle}</td>
+          <td>
+            <span class="badge ${item.badgeClass}">
+              <i data-lucide="${item.icon}" style="width: 12px; height: 12px; margin-right: 4px;"></i>
+              ${item.statusText}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-outline btn-sm" onclick="openTimelineModal('${item.id}')">
+              <i data-lucide="activity" style="width: 14px; height: 14px"></i> ดูไทม์ไลน์
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  } catch (err) {
+    console.error("Error loading dashboard data:", err);
+  }
+}
+
+// 2. เปิด Modal ดู Timeline ประวัติออเดอร์เฉพาะเจาะจง
+async function openTimelineModal(orderId) {
+  try {
+    // แก้ไขจาก /api/system/... เป็น /api/admin/... ให้ตรงกับ server.js
+    const response = await fetch(`/api/admin/${orderId}/timeline`);
+    const result = await response.json();
+
+    const timelineContainer = document.getElementById("timelineContent");
+    if (!timelineContainer) return;
+
+    if (!result.success || result.data.length === 0) {
+      timelineContainer.innerHTML = `<p style="text-align: center; color: var(--ink-soft);">ยังไม่มีประวัติไทม์ไลน์สำหรับออเดอร์นี้</p>`;
+    } else {
+      let timelineHtml = '<ul class="timeline-list" style="list-style: none; padding: 0;">';
+      result.data.forEach((step) => {
+        timelineHtml += `
+          <li class="timeline-item" style="margin-bottom: 15px; padding-left: 15px; border-left: 2px solid var(--primary, #007bff);">
+            <div class="timeline-time" style="font-size: 12px; color: #6c757d;">${new Date(step.step_time).toLocaleString('th-TH')}</div>
+            <div class="timeline-title"><strong>${step.step_title}</strong></div>
+            <div class="timeline-desc" style="font-size: 14px; color: #333;">${step.step_desc || ''}</div>
+          </li>
+        `;
+      });
+      timelineHtml += '</ul>';
+      timelineContainer.innerHTML = timelineHtml;
+    }
+
+    const modal = document.getElementById("timelineModal");
+    if (modal) modal.classList.add("active");
+  } catch (err) {
+    console.error("Error fetching timeline:", err);
+    alert("ไม่สามารถโหลดข้อมูล Timeline ได้");
+  }
+}
+
+function closeTimelineModal() {
+  const modal = document.getElementById("timelineModal");
+  if (modal) modal.classList.remove("active");
+}
+
+// -------------------------------------------------------------------------
 // ระบบจัดการผู้ใช้งาน (Users Management)
 // -------------------------------------------------------------------------
 
-// 1. โหลดรายชื่อผู้ใช้จาก Backend (สมมติ Endpoint คือ /api/users)
 async function loadUsersData() {
   try {
     const response = await fetch("/api/users");
@@ -71,32 +163,31 @@ async function loadUsersData() {
     let html = "";
     usersData.forEach((user) => {
       html += `
-                <tr>
-                    <td><strong>#${user.id}</strong></td>
-                    <td>${user.fullname || user.name || "-"}</td>
-                    <td><code>${user.username}</code></td>
-                    <td><span style="background: #eee; padding: 2px 6px; border-radius: 4px; font-family: monospace;">${user.password}</span></td>
-                    <td><span class="badge badge-warning">${user.department}</span></td>
-                    <td>
-                        <button class="btn btn-outline btn-sm" style="margin-right: 5px;" onclick="openEditUserModal('${user.id}', '${user.fullname || user.name || ""}', '${user.username}', '${user.password}', '${user.department}')">
-                            <i data-lucide="edit" style="width: 14px; height: 14px"></i> แก้ไข
-                        </button>
-                        <button class="btn btn-outline btn-sm" style="color: var(--danger); border-color: var(--danger);" onclick="deleteUser('${user.id}')">
-                            <i data-lucide="trash-2" style="width: 14px; height: 14px"></i> ลบ
-                        </button>
-                    </td>
-                </tr>
-            `;
+        <tr>
+            <td><strong>#${user.id}</strong></td>
+            <td>${user.fullname || user.name || "-"}</td>
+            <td><code>${user.username}</code></td>
+            <td><span style="background: #eee; padding: 2px 6px; border-radius: 4px; font-family: monospace;">${user.password}</span></td>
+            <td><span class="badge badge-warning">${user.department}</span></td>
+            <td>
+                <button class="btn btn-outline btn-sm" style="margin-right: 5px;" onclick="openEditUserModal('${user.id}', '${user.fullname || user.name || ""}', '${user.username}', '${user.password}', '${user.department}')">
+                    <i data-lucide="edit" style="width: 14px; height: 14px"></i> แก้ไข
+                </button>
+                <button class="btn btn-outline btn-sm" style="color: var(--danger); border-color: var(--danger);" onclick="deleteUser('${user.id}')">
+                    <i data-lucide="trash-2" style="width: 14px; height: 14px"></i> ลบ
+                </button>
+            </td>
+        </tr>
+      `;
     });
 
     tbody.innerHTML = html;
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
   } catch (err) {
     console.error("Error loading users:", err);
   }
 }
 
-// 2. เพิ่มผู้ใช้ใหม่ (ส่งข้อมูลไปยัง Backend /api/users)
 async function handleUserSubmit(event) {
   event.preventDefault();
 
@@ -117,7 +208,7 @@ async function handleUserSubmit(event) {
     if (response.ok) {
       alert("บันทึกผู้ใช้งานใหม่เรียบร้อยแล้ว");
       event.target.reset();
-      loadUsersData(); // โหลดตารางใหม่
+      loadUsersData();
     } else {
       const errData = await response.json();
       alert("เกิดข้อผิดพลาด: " + (errData.message || "ไม่สามารถบันทึกได้"));
@@ -128,7 +219,6 @@ async function handleUserSubmit(event) {
   }
 }
 
-// 3. เปิด Modal แก้ไขผู้ใช้งาน
 function openEditUserModal(id, fullname, username, password, department) {
   document.getElementById("editUserId").value = id;
   document.getElementById("editFullname").value = fullname;
@@ -136,15 +226,16 @@ function openEditUserModal(id, fullname, username, password, department) {
   document.getElementById("editPassword").value = password;
   document.getElementById("editDepartment").value = department;
 
-  document.getElementById("editUserModal").classList.add("active");
-  lucide.createIcons();
+  const modal = document.getElementById("editUserModal");
+  if (modal) modal.classList.add("active");
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function closeEditUserModal() {
-  document.getElementById("editUserModal").classList.remove("active");
+  const modal = document.getElementById("editUserModal");
+  if (modal) modal.classList.remove("active");
 }
 
-// 4. บันทึกการแก้ไขผู้ใช้งาน (PUT /api/users/:id)
 async function handleEditUserSubmit(event) {
   event.preventDefault();
 
@@ -176,7 +267,6 @@ async function handleEditUserSubmit(event) {
   }
 }
 
-// 5. ลบผู้ใช้งาน (DELETE /api/users/:id)
 async function deleteUser(id) {
   if (!confirm("คุณต้องการลบบัญชีผู้ใช้นี้ใช่หรือไม่?")) return;
 
@@ -197,11 +287,21 @@ async function deleteUser(id) {
   }
 }
 
-
 function handleLogout() {
   localStorage.clear();
   window.location.replace("login.html");
   if (window.history && window.history.pushState) {
     window.history.replaceState(null, null, "login.html");
   }
+}
+
+// -------------------------------------------------------------------------
+// Real-time Socket.io Listener (อัปเดตข้อมูลอัตโนมัติเมื่อมีการเปลี่ยนแปลง)
+// -------------------------------------------------------------------------
+if (typeof io !== 'undefined') {
+  const socket = io();
+  socket.on("orderUpdated", () => {
+    console.log("🔄 ได้รับสัญญาณอัปเดตออเดอร์ กำลังรีเฟรชหน้าแดชบอร์ด...");
+    loadDashboardData();
+  });
 }
