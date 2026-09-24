@@ -72,16 +72,52 @@ async function loadDashboardData() {
 
     let html = "";
     ordersData.forEach((item) => {
+      let vehicleVal = item.vehicle_selection || item.vehicle || "";
+      let statusText = item.statusText || item.status || "รอดำเนินการ";
+      let badgeClass = item.badgeClass || "badge-warning";
+      let icon = item.icon || "clock";
+
+      // 📌 เงื่อนไขที่ 1: ถ้าบัญชียืนยันการชำระเงินแล้ว หรือสถานะเป็นเสร็จสิ้น -> "งานเสร็จสิ้น"
+      if (
+        item.status === "accounting_verified" || 
+        item.status === "completed" || 
+        item.status === "verified" ||
+        statusText.includes("ยืนยันการชำระ") || 
+        statusText.includes("เสร็จสิ้น") ||
+        statusText.includes("accounting_verified")
+      ) {
+        statusText = "งานเสร็จสิ้น";
+        badgeClass = "badge-success";
+        icon = "check-circle-2";
+      }
+      // 📌 เงื่อนไขที่ 2: มารับสินค้าเอง (pickup-self) -> "รอฝ่ายบัญชีตรวจสอบครับ"
+      else if (vehicleVal.toLowerCase().includes("pickup") || vehicleVal === "pickup-self") {
+        statusText = "รอฝ่ายบัญชีตรวจสอบครับ";
+        badgeClass = "badge-warning";
+        icon = "clock";
+      } 
+      // 📌 เงื่อนไขที่ 3: Logistic ส่งเสร็จแล้ว -> "รอฝ่ายบัญชีตรวจสอบครับ"
+      else if (
+        item.status === "logistic_delivered" || 
+        item.status === "delivered" || 
+        statusText.includes("จัดส่ง") ||
+        vehicleVal.toLowerCase().includes("logistic")
+      ) {
+        statusText = "รอฝ่ายบัญชีตรวจสอบครับ";
+        badgeClass = "badge-warning";
+        icon = "clock";
+      }
+
       html += `
         <tr>
           <td><strong>#${item.id}</strong></td>
-          <td>${item.operator}</td>
-          <td><span class="badge badge-outline">${item.department}</span></td>
-          <td>${item.vehicle}</td>
+          <td>${item.operator || item.employee_name || "-"}</td>
+          <td><span class="badge badge-outline">${item.department || "-"}</span></td>
+          <td>${vehicleVal}</td>
           <td>
-            <span class="badge ${item.badgeClass}">
-              <i data-lucide="${item.icon}" style="width: 12px; height: 12px; margin-right: 4px;"></i>
-              ${item.statusText}
+            <span class="badge ${badgeClass}">
+              <i data-lucide="${icon}" style="width: 12px; height: 12px; margin-right: 4px;"></i>
+              ${statusText}
             </span>
           </td>
           <td>
@@ -99,7 +135,6 @@ async function loadDashboardData() {
     console.error("Error loading dashboard data:", err);
   }
 }
-
 // 2. เปิด Modal ดู Timeline ประวัติออเดอร์เฉพาะเจาะจง
 async function openTimelineModal(orderId) {
   try {

@@ -5,7 +5,7 @@ module.exports = function(pool, io) {
 
     console.log("🔥 โหลด Bsystem (Admin Routes) สำเร็จ!");
 
-    // 1. ดึงรายการออเดอร์ทั้งหมดพร้อมเช็คสถานะผ่านทุกแผนก (Warehouse -> Checker -> Logistic)
+  // 1. ดึงรายการออเดอร์ทั้งหมดพร้อมเช็คสถานะผ่านทุกแผนก (Warehouse -> Checker -> Logistic -> Accounting)
     router.get('/orders', async (req, res) => {
         try {
             const query = `
@@ -30,20 +30,32 @@ module.exports = function(pool, io) {
                         o.vehicle_selection, 
                         'ไม่ระบุ'
                     ) AS "vehicle",
+                    -- 📌 ปรับเงื่อนไขสถานะให้ตรงกับ Business Logic ใหม่
                     CASE 
-                        WHEN dc.id IS NOT NULL THEN 'จัดส่งสำเร็จ'
+                        -- กรณีบัญชียืนยันการชำระเงินแล้ว (หรือสถานะเสร็จสิ้น)
+                        WHEN o.status = 'accounting_verified' OR o.status = 'completed' THEN 'งานเสร็จสิ้น'
+                        
+                        -- กรณีมารับเองที่ร้าน (pickup-self) หรือ Logistic จัดส่งสำเร็จแล้ว -> ต้องรอฝ่ายบัญชีตรวจสอบ
+                        WHEN oc.vehicle_selection = 'pickup-self' OR o.vehicle_selection = 'pickup-self' THEN 'รอฝ่ายบัญชีตรวจสอบครับ'
+                        WHEN dc.id IS NOT NULL THEN 'รอฝ่ายบัญชีตรวจสอบครับ'
+                        
+                        -- สถานะขั้นตอนก่อนหน้า
                         WHEN oc.id IS NOT NULL THEN 'ตรวจสอบ/ปล่อยรถแล้ว'
                         WHEN of_fill.id IS NOT NULL THEN 'กำลังแพ็คสินค้า'
                         ELSE 'รอดำเนินการ'
                     END AS "statusText",
                     CASE 
-                        WHEN dc.id IS NOT NULL THEN 'badge-success'
+                        WHEN o.status = 'accounting_verified' OR o.status = 'completed' THEN 'badge-success'
+                        WHEN oc.vehicle_selection = 'pickup-self' OR o.vehicle_selection = 'pickup-self' THEN 'badge-warning'
+                        WHEN dc.id IS NOT NULL THEN 'badge-warning'
                         WHEN oc.id IS NOT NULL THEN 'badge-info'
                         WHEN of_fill.id IS NOT NULL THEN 'badge-warning'
                         ELSE 'badge-secondary'
                     END AS "badgeClass",
                     CASE 
-                        WHEN dc.id IS NOT NULL THEN 'check-circle-2'
+                        WHEN o.status = 'accounting_verified' OR o.status = 'completed' THEN 'check-circle-2'
+                        WHEN oc.vehicle_selection = 'pickup-self' OR o.vehicle_selection = 'pickup-self' THEN 'clock'
+                        WHEN dc.id IS NOT NULL THEN 'clock'
                         WHEN oc.id IS NOT NULL THEN 'truck'
                         WHEN of_fill.id IS NOT NULL THEN 'package'
                         ELSE 'clock'
@@ -61,7 +73,6 @@ module.exports = function(pool, io) {
             res.status(500).json({ success: false, error: "เกิดข้อผิดพลาดในการดึงข้อมูลสถานะออเดอร์แบบละเอียด" });
         }
     });
-
     // 2. ดึงข้อมูล Timeline ของออเดอร์เฉพาะเจาะจง
     router.get('/:id/timeline', async (req, res) => {
         const { id } = req.params;
