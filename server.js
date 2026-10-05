@@ -50,7 +50,7 @@ const pool = new Pool({
   user: "postgres",
   host: "localhost",
   database: "construction_store_db",
-  password: "0934570709",
+  password: "7364",
   port: 5432,
 });
 
@@ -89,6 +89,9 @@ app.use("/api/accounting", accountingRoutes);
 const userRoutes = require("./backend/Busers")(pool);
 app.use("/api/users", userRoutes); //  ผูกเข้ากับ Endpoint /api/users เพื่อให้สอดคล้องกับฝั่งหน้าบ้าน
 
+// ในไฟล์ server.js หลัก
+const productRouter = require('./routes/products'); // สมมติว่าเซฟไว้ในโฟลเดอร์ routes
+app.use('/api/products', productRouter(pool));
 
 // ⬅️ 6. เปลี่ยนจาก app.listen มาเป็น server.listen แทน
 server.listen(3000, () => {
