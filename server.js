@@ -78,7 +78,6 @@ app.use("/api/checker", checkerRoutes);
 const logisticRoutes = require("./backend/Blogistic")(pool, io);
 app.use("/api/logistic", logisticRoutes);
 
-
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "login.html"));
 });

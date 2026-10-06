@@ -1,11 +1,16 @@
-// โหลดข้อมูลเมื่อเปิดหน้าเว็บ
+// =========================================================================
+// เมื่อโหลดหน้าเว็บเสร็จ ให้เริ่มต้นทำงานทุกระบบพร้อมกันที่จุดเดียว
+// =========================================================================
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("DOM Loaded - กำลังเรียกใช้งานฟังก์ชันเริ่มต้น");
+  console.log("DOM Loaded - กำลังเรียกใช้งานฟังก์ชันเริ่มต้นทั้งหมด");
   loadDashboardData(); // โหลดข้อมูลติดตามสถานะกิจกรรม
-  loadUsersData(); // โหลดรายชื่อผู้ใช้เตรียมไว้
+  loadUsersData();     // โหลดรายชื่อผู้ใช้เตรียมไว้
+  loadProducts();      // โหลดข้อมูลสินค้าในคลัง
 });
 
-// ดักฟังการสลับแท็บ
+// -------------------------------------------------------------------------
+// ระบบสลับแท็บ (Tab Navigation)
+// -------------------------------------------------------------------------
 function switchTab(tabId, buttonElement) {
   document.querySelectorAll(".tab-content").forEach((tab) => {
     tab.classList.remove("active");
@@ -20,7 +25,9 @@ function switchTab(tabId, buttonElement) {
   if (tabId === "users") {
     loadUsersData();
   } else if (tabId === "dashboard") {
-    loadDashboardData(); // โหลดข้อมูลใหม่เมื่อกลับมาที่หน้าแดชบอร์ด
+    loadDashboardData();
+  } else if (tabId === "products") {
+    loadProducts();
   }
 
   const headings = {
@@ -44,19 +51,16 @@ function switchTab(tabId, buttonElement) {
 
   if (headings[tabId]) {
     document.getElementById("page-heading").textContent = headings[tabId].title;
-    document.getElementById("page-subheading").textContent =
-      headings[tabId].sub;
+    document.getElementById("page-subheading").textContent = headings[tabId].sub;
   }
 }
 
 // -------------------------------------------------------------------------
 // ระบบติดตามสถานะกิจกรรม (Dashboard & Timeline Tracking)
 // -------------------------------------------------------------------------
-
-// 1. โหลดข้อมูลภาพรวมออเดอร์ทุกขั้นตอน
 async function loadDashboardData() {
   try {
-    const response = await fetch("/api/admin/orders"); // ตรงกับ server.js ที่ผูกไว้ที่ /api/admin
+    const response = await fetch("/api/admin/orders");
     if (!response.ok) throw new Error("ไม่สามารถดึงข้อมูลแดชบอร์ดได้");
 
     const result = await response.json();
@@ -76,11 +80,10 @@ async function loadDashboardData() {
       let rawStatus = item.statusText || item.status || "รอดำเนินการ";
       
       let statusText = "รอดำเนินการ";
-      let bgColor = "#e0f2fe";   // ฟ้าอ่อน (ค่าเริ่มต้นสำหรับรอดำเนินการ)
-      let textColor = "#0369a1"; // ฟ้าเข้ม
+      let bgColor = "#e0f2fe"; 
+      let textColor = "#0369a1";
       let icon = "clock";
 
-      // 📌 1. งานเสร็จสิ้น (บัญชียืนยันการชำระเงินแล้ว / สำเร็จ) -> สีเขียว
       if (
         item.status === "accounting_verified" || 
         item.status === "completed" || 
@@ -90,12 +93,10 @@ async function loadDashboardData() {
         rawStatus.includes("accounting_verified")
       ) {
         statusText = "งานเสร็จสิ้น";
-        bgColor = "#dcfce7";   // เขียวอ่อน
-        textColor = "#166534"; // เขียวเข้ม
+        bgColor = "#dcfce7";
+        textColor = "#166534";
         icon = "check-circle-2";
-      }
-      // 📌 2. รอฝ่ายบัญชีตรวจสอบ (pickup-self หรือ logistic ส่งเสร็จแล้ว) -> สีส้ม / เหลือง
-      else if (
+      } else if (
         vehicleVal.toLowerCase().includes("pickup") || 
         vehicleVal === "pickup-self" ||
         item.status === "logistic_delivered" || 
@@ -104,29 +105,23 @@ async function loadDashboardData() {
         vehicleVal.toLowerCase().includes("logistic")
       ) {
         statusText = "รอฝ่ายบัญชีตรวจสอบครับ";
-        bgColor = "#fef9c3";   // เหลืองอ่อน
-        textColor = "#854d0e"; // เหลือง/น้ำตาลเข้ม
+        bgColor = "#fef9c3";
+        textColor = "#854d0e";
         icon = "clock";
-      }
-      // 📌 3. กำลังตรวจสอบ / ปล่อยรถแล้ว -> สีฟ้าเข้มขึ้นมาหน่อย
-      else if (rawStatus.includes("ตรวจสอบ") || rawStatus.includes("ปล่อยรถ") || item.status === "checker_verified") {
+      } else if (rawStatus.includes("ตรวจสอบ") || rawStatus.includes("ปล่อยรถ") || item.status === "checker_verified") {
         statusText = rawStatus.includes("ปล่อยรถ") ? "ปล่อยรถแล้ว" : "กำลังตรวจสอบ";
-        bgColor = "#bae6fd";   // ฟ้าปานกลาง
+        bgColor = "#bae6fd";
         textColor = "#0369a1"; 
         icon = "truck";
-      }
-      // 📌 4. กำลังแพ็คสินค้า / Fulfillment -> สีม่วง
-      else if (rawStatus.includes("แพ็ค") || rawStatus.includes("fulfillment") || item.status === "warehouse_packed") {
+      } else if (rawStatus.includes("แพ็ค") || rawStatus.includes("fulfillment") || item.status === "warehouse_packed") {
         statusText = "กำลังแพ็คสินค้า";
-        bgColor = "#f3e8ff";   // ม่วงอ่อน
-        textColor = "#6b21a8"; // ม่วงเข้ม
+        bgColor = "#f3e8ff";
+        textColor = "#6b21a8";
         icon = "package";
-      } 
-      // 📌 5. กรณีสถานะอื่นๆ หรือรอดำเนินการทั่วไป -> สีฟ้าพาสเทลสวยๆ
-      else {
+      } else {
         statusText = rawStatus;
-        bgColor = "#e0f2fe";   // ฟ้าอ่อน
-        textColor = "#0369a1"; // ฟ้าเข้ม
+        bgColor = "#e0f2fe";
+        textColor = "#0369a1";
         icon = "clock";
       }
 
@@ -157,10 +152,9 @@ async function loadDashboardData() {
     console.error("Error loading dashboard data:", err);
   }
 }
-// 2. เปิด Modal ดู Timeline ประวัติออเดอร์เฉพาะเจาะจง
+
 async function openTimelineModal(orderId) {
   try {
-    // แก้ไขจาก /api/system/... เป็น /api/admin/... ให้ตรงกับ server.js
     const response = await fetch(`/api/admin/${orderId}/timeline`);
     const result = await response.json();
 
@@ -200,7 +194,6 @@ function closeTimelineModal() {
 // -------------------------------------------------------------------------
 // ระบบจัดการผู้ใช้งาน (Users Management)
 // -------------------------------------------------------------------------
-
 async function loadUsersData() {
   try {
     const response = await fetch("/api/users");
@@ -247,7 +240,6 @@ async function loadUsersData() {
 
 async function handleUserSubmit(event) {
   event.preventDefault();
-
   const userData = {
     fullname: document.getElementById("newFullname").value,
     username: document.getElementById("newUsername").value,
@@ -295,7 +287,6 @@ function closeEditUserModal() {
 
 async function handleEditUserSubmit(event) {
   event.preventDefault();
-
   const id = document.getElementById("editUserId").value;
   const updatedData = {
     fullname: document.getElementById("editFullname").value,
@@ -353,7 +344,7 @@ function handleLogout() {
 }
 
 // -------------------------------------------------------------------------
-// Real-time Socket.io Listener (อัปเดตข้อมูลอัตโนมัติเมื่อมีการเปลี่ยนแปลง)
+// Real-time Socket.io Listener
 // -------------------------------------------------------------------------
 if (typeof io !== 'undefined') {
   const socket = io();
