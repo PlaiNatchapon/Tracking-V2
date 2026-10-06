@@ -315,8 +315,32 @@ if (typeof io !== 'undefined') {
 }
 
 
-function handleReceiveReport() {
-  // โค้ดในอนาคตสำหรับการกดรับรายงานจะใส่ไว้ที่นี่
-  console.log("กำลังกดรับรายงาน...");
-  alert("กดรับรายงานเรียบร้อยแล้ว!");
+async function handleReceiveReport() {
+  try {
+    console.log("กำลังดาวน์โหลดรายงานคลังสินค้า...");
+    
+    // เรียกไปยัง API ที่เราสร้างไว้บน Backend
+    const response = await fetch('/api/admin/export-inventory');
+    if (!response.ok) throw new Error('ไม่สามารถดาวน์โหลดไฟล์รายงานได้');
+
+    // แปลงผลลัพธ์เป็นไฟล์ (Blob)
+    const blob = await response.blob();
+    
+    // สร้างลิงก์จำลองเพื่อดาวน์โหลดไฟล์ลงเครื่องอัตโนมัติ
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `product_inventory_report_${new Date().toISOString().slice(0,10)}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    
+    // ล้างค่าทิ้งหลังดาวน์โหลดเสร็จ
+    a.remove();
+    window.URL.revokeObjectURL(url);
+    
+    console.log("ดาวน์โหลดรายงานสำเร็จ!");
+  } catch (error) {
+    console.error("Error:", error);
+    alert("เกิดข้อผิดพลาดในการดาวน์โหลดรายงาน");
+  }
 }
