@@ -313,3 +313,10 @@ if (typeof io !== 'undefined') {
     if (typeof fetchMetrics === 'function') fetchMetrics();
   });
 }
+
+
+function handleReceiveReport() {
+  // โค้ดในอนาคตสำหรับการกดรับรายงานจะใส่ไว้ที่นี่
+  console.log("กำลังกดรับรายงาน...");
+  alert("กดรับรายงานเรียบร้อยแล้ว!");
+}
