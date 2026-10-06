@@ -4,6 +4,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   console.log("DOM Loaded - กำลังเรียกใช้งานฟังก์ชันเริ่มต้นทั้งหมด");
   loadDashboardData(); // โหลดข้อมูลติดตามสถานะกิจกรรม
+  if (typeof fetchMetrics === 'function') fetchMetrics(); // โหลดตัวเลขการ์ด Metric ทันที
   loadUsersData();     // โหลดรายชื่อผู้ใช้เตรียมไว้
   loadProducts();      // โหลดข้อมูลสินค้าในคลัง
 });
@@ -26,6 +27,7 @@ function switchTab(tabId, buttonElement) {
     loadUsersData();
   } else if (tabId === "dashboard") {
     loadDashboardData();
+    if (typeof fetchMetrics === 'function') fetchMetrics();
   } else if (tabId === "products") {
     loadProducts();
   }
@@ -56,7 +58,7 @@ function switchTab(tabId, buttonElement) {
 }
 
 // -------------------------------------------------------------------------
-// ระบบติดตามสถานะกิจกรรม (Dashboard & Timeline Tracking)
+// ระบบติดตามสถานะกิจกรรม (Dashboard Tracking)
 // -------------------------------------------------------------------------
 async function loadDashboardData() {
   try {
@@ -70,7 +72,7 @@ async function loadDashboardData() {
     if (!tbody) return;
 
     if (ordersData.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--ink-soft);">ยังไม่มีข้อมูลกิจกรรมในระบบ</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--ink-soft);">ยังไม่มีข้อมูลกิจกรรมในระบบ</td></tr>`;
       return;
     }
 
@@ -137,11 +139,6 @@ async function loadDashboardData() {
               ${statusText}
             </span>
           </td>
-          <td>
-            <button class="btn btn-outline btn-sm" onclick="openTimelineModal('${item.id}')">
-              <i data-lucide="activity" style="width: 14px; height: 14px"></i> ดูไทม์ไลน์
-            </button>
-          </td>
         </tr>
       `;
     });
@@ -151,44 +148,6 @@ async function loadDashboardData() {
   } catch (err) {
     console.error("Error loading dashboard data:", err);
   }
-}
-
-async function openTimelineModal(orderId) {
-  try {
-    const response = await fetch(`/api/admin/${orderId}/timeline`);
-    const result = await response.json();
-
-    const timelineContainer = document.getElementById("timelineContent");
-    if (!timelineContainer) return;
-
-    if (!result.success || result.data.length === 0) {
-      timelineContainer.innerHTML = `<p style="text-align: center; color: var(--ink-soft);">ยังไม่มีประวัติไทม์ไลน์สำหรับออเดอร์นี้</p>`;
-    } else {
-      let timelineHtml = '<ul class="timeline-list" style="list-style: none; padding: 0;">';
-      result.data.forEach((step) => {
-        timelineHtml += `
-          <li class="timeline-item" style="margin-bottom: 15px; padding-left: 15px; border-left: 2px solid var(--primary, #007bff);">
-            <div class="timeline-time" style="font-size: 12px; color: #6c757d;">${new Date(step.step_time).toLocaleString('th-TH')}</div>
-            <div class="timeline-title"><strong>${step.step_title}</strong></div>
-            <div class="timeline-desc" style="font-size: 14px; color: #333;">${step.step_desc || ''}</div>
-          </li>
-        `;
-      });
-      timelineHtml += '</ul>';
-      timelineContainer.innerHTML = timelineHtml;
-    }
-
-    const modal = document.getElementById("timelineModal");
-    if (modal) modal.classList.add("active");
-  } catch (err) {
-    console.error("Error fetching timeline:", err);
-    alert("ไม่สามารถโหลดข้อมูล Timeline ได้");
-  }
-}
-
-function closeTimelineModal() {
-  const modal = document.getElementById("timelineModal");
-  if (modal) modal.classList.remove("active");
 }
 
 // -------------------------------------------------------------------------
@@ -351,5 +310,6 @@ if (typeof io !== 'undefined') {
   socket.on("orderUpdated", () => {
     console.log("🔄 ได้รับสัญญาณอัปเดตออเดอร์ กำลังรีเฟรชหน้าแดชบอร์ด...");
     loadDashboardData();
+    if (typeof fetchMetrics === 'function') fetchMetrics();
   });
 }
