@@ -318,8 +318,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   try {
     const response = await fetch(
-      `http://192.168.1.35:3000/api/user-profile/${userId}`,
-    );
+  `/api/user-profile/${userId}`,
+);
     if (!response.ok) throw new Error("ไม่สามารถดึงข้อมูลผู้ใช้ได้");
 
     const userData = await response.json();
