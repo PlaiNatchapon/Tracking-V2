@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchCheckerOrders();
 
   if (typeof io !== "undefined") {
-    const socket = io(`http://${window.location.hostname}:3000`);
+    const socket = io();
     socket.on("orderUpdated", () => {
       fetchCheckerOrders();
     });
@@ -29,7 +29,7 @@ async function fetchCheckerOrders() {
   orderListContainer.innerHTML = "<p style='text-align:center; color:#666;'>กำลังโหลดข้อมูลออเดอร์...</p>";
 
   try {
-    const apiUrl = `http://${window.location.hostname}:3000/api/checker/orders`;
+    const apiUrl = "/api/checker/orders";
     const response = await fetch(apiUrl);
     if (!response.ok) throw new Error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
 
@@ -150,7 +150,7 @@ async function tryOpenDispatchModal(orderId, order) {
   const currentFullName = localStorage.getItem("fullname") || localStorage.getItem("name") || localStorage.getItem("username") || "ไม่ระบุชื่อ";
 
   try {
-    const apiUrl = `http://${window.location.hostname}:3000/api/checker/orders/${orderId}/lock`;
+    const apiUrl = `/api/checker/orders/${orderId}/lock`;
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -179,7 +179,7 @@ function startHeartbeat(orderId, checkerName) {
 
   heartbeatInterval = setInterval(async () => {
     try {
-      const apiUrl = `http://${window.location.hostname}:3000/api/checker/orders/${orderId}/heartbeat`;
+     const apiUrl = `/api/checker/orders/${orderId}/heartbeat`;
       await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -206,7 +206,7 @@ async function unlockCurrentOrder() {
 
   try {
     stopHeartbeat();
-    const apiUrl = `http://${window.location.hostname}:3000/api/checker/orders/${currentLockedOrderId}/unlock`;
+    const apiUrl = `/api/checker/orders/${currentLockedOrderId}/unlock`;
     await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -482,7 +482,7 @@ async function submitDispatchOrder(event) {
   }
 
   try {
-    const apiUrl = `http://${window.location.hostname}:3000/api/checker/dispatch`;
+    const apiUrl = "/api/checker/dispatch";
     
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -525,7 +525,7 @@ async function submitDispatchOrder(event) {
 window.addEventListener("beforeunload", () => {
   if (currentLockedOrderId) {
     const currentFullName = localStorage.getItem("fullname") || localStorage.getItem("name") || localStorage.getItem("username") || "ไม่ระบุชื่อ";
-    const apiUrl = `http://${window.location.hostname}:3000/api/checker/orders/${currentLockedOrderId}/unlock`;
+    const apiUrl = `/api/checker/orders/${currentLockedOrderId}/unlock`;
     
     navigator.sendBeacon(apiUrl, JSON.stringify({ checkerName: currentFullName }));
   }

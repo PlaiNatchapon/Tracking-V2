@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchLogisticOrders();
 
   if (typeof io !== "undefined") {
-    const socket = io(`http://${window.location.hostname}:3000`);
+    const socket = io();
     socket.on("orderUpdated", () => {
       console.log("🔄 ได้รับข้อมูลอัปเดตจากระบบ กำลังรีเฟรชรายการ...");
       fetchLogisticOrders();
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // ฟังก์ชันดึงรายการออเดอร์ (เช็คสถานะการล็อคเพื่อเปลี่ยนปุ่ม และเด้ง Modal อัตโนมัติถ้ามีงานค้าง)
 async function fetchLogisticOrders() {
   try {
-    const response = await fetch(`http://${window.location.hostname}:3000/api/logistic/orders`);
+    const response = await fetch("/api/logistic/orders");
     if (!response.ok) throw new Error("ไม่สามารถดึงข้อมูลออเดอร์ได้");
 
     const orders = await response.json();
@@ -108,7 +108,7 @@ async function fetchLogisticOrders() {
 async function handleLockAndOpen(order) {
   const currentUsername = localStorage.getItem("fullname") || localStorage.getItem("name") || localStorage.getItem("username") || "ไม่ระบุชื่อ";
   try {
-    await fetch(`http://${window.location.hostname}:3000/api/logistic/lock/${order.id}`, {
+    await fetch(`/api/logistic/lock/${order.id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: currentUsername })
@@ -124,7 +124,7 @@ async function handleLockAndOpen(order) {
 async function handleUnlockOrder(orderId) {
   if (!confirm("ต้องการยกเลิกรับงานนี้ใช่หรือไม่? ออเดอร์จะถูกปลดล็อคให้ผู้อื่นทำต่อ")) return;
   try {
-    await fetch(`http://${window.location.hostname}:3000/api/logistic/unlock/${orderId}`, { method: "POST" });
+   await fetch(`/api/logistic/unlock/${orderId}`, { method: "POST" });
     document.getElementById("logisticModal")?.remove();
     fetchLogisticOrders();
   } catch (err) {
@@ -236,7 +236,7 @@ function triggerAutoSave(orderId) {
     const workComment = document.getElementById("workCommentInput")?.value || "";
 
     try {
-      await fetch(`http://${window.location.hostname}:3000/api/logistic/autosave`, {
+      await fetch("/api/logistic/autosave", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -371,7 +371,7 @@ async function submitLogisticOrder(event, orderId) {
   }
 
   try {
-    const response = await fetch(`http://${window.location.hostname}:3000/api/logistic/submit`, {
+    const response = await fetch("/api/logistic/submit", {
       method: "POST",
       body: formData
     });
