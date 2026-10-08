@@ -216,9 +216,6 @@ function openLogisticModal(order) {
           ยกเลิกรับงาน (ปลดล็อค)
         </button>
         <div style="display: flex; gap: 10px;">
-          <button onclick="document.getElementById('logisticModal').remove(); fetchLogisticOrders();" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px;">
-            ยกเลิก
-          </button>
           <button onclick="submitLogisticOrder(event, ${order.id})" style="background: #059669; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; box-shadow: 0 2px 4px rgba(5,150,105,0.2);">
             บันทึกผลการจัดส่ง
           </button>
