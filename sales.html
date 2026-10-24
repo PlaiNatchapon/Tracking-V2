@@ -87,6 +87,64 @@
           </div>
         </div>
 
+  ```html
+<!-- หลักฐานการชำระเงิน: ไม่บังคับแนบ -->
+<div class="section-box" id="payment-slip-section">
+  <div class="section-title">
+    <i class="fa-solid fa-receipt"></i>
+    หลักฐานการชำระเงิน / สลิปโอนเงิน
+    <span class="optional-badge">ไม่บังคับ</span>
+  </div>
+
+  <input
+    type="file"
+    id="payment-slip-input"
+    accept="image/*"
+    hidden
+    onchange="handleSlipUpload(event)"
+  />
+
+  <div class="slip-upload-box">
+    <div
+      class="photo-add-card"
+      id="slip-add-btn"
+      style="width: 110px; height: 110px; flex-shrink: 0"
+      onclick="document.getElementById('payment-slip-input').click()"
+    >
+      <i class="fa-solid fa-file-invoice-dollar"></i>
+      <span>แนบสลิป (ถ้ามี)</span>
+    </div>
+
+    <div
+      class="slip-preview-container"
+      id="slip-preview-box"
+      style="display: none"
+    >
+      <img
+        id="slip-img-preview"
+        src=""
+        alt="หลักฐานการชำระเงิน"
+        onclick="openImageModal(this.src, 'หลักฐานการชำระเงิน / สลิปโอนเงิน')"
+      />
+
+      <button
+        type="button"
+        class="photo-remove-btn"
+        onclick="removeSlip()"
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div style="font-size: 13px; line-height: 1.6">
+      <b>หมายเหตุ:</b>
+      สามารถแนบสลิปเพื่อใช้เป็นหลักฐานประกอบคำสั่งซื้อได้
+      หากไม่มีสลิปสามารถบันทึกคำสั่งซื้อได้ตามปกติ
+    </div>
+  </div>
+</div>
+```
+
         <div class="section-label">รายการสินค้า</div>
         <div id="product-list">
           <div class="product-item" style="position: relative;">
@@ -137,6 +195,7 @@
             </div>
           </div>
         </div>
+
 
         <div class="btn-group">
           <button class="btn btn-add" onclick="cloneRow()">+ เพิ่มรายการสินค้า</button>
