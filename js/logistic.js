@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchLogisticOrders();
 
   if (typeof io !== "undefined") {
-    const socket = io(`http://${window.location.hostname}:3000`);
+    const socket = io();
     socket.on("orderUpdated", () => {
       console.log("🔄 ได้รับข้อมูลอัปเดตจากระบบ กำลังรีเฟรชรายการ...");
       fetchLogisticOrders();
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // ฟังก์ชันดึงรายการออเดอร์ (เช็คสถานะการล็อคเพื่อเปลี่ยนปุ่ม และเด้ง Modal อัตโนมัติถ้ามีงานค้าง)
 async function fetchLogisticOrders() {
   try {
-    const response = await fetch(`http://${window.location.hostname}:3000/api/logistic/orders`);
+    const response = await fetch("/api/logistic/orders");
     if (!response.ok) throw new Error("ไม่สามารถดึงข้อมูลออเดอร์ได้");
 
     const orders = await response.json();
@@ -108,7 +108,7 @@ async function fetchLogisticOrders() {
 async function handleLockAndOpen(order) {
   const currentUsername = localStorage.getItem("fullname") || localStorage.getItem("name") || localStorage.getItem("username") || "ไม่ระบุชื่อ";
   try {
-    await fetch(`http://${window.location.hostname}:3000/api/logistic/lock/${order.id}`, {
+    await fetch(`/api/logistic/lock/${order.id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: currentUsername })
@@ -124,7 +124,7 @@ async function handleLockAndOpen(order) {
 async function handleUnlockOrder(orderId) {
   if (!confirm("ต้องการยกเลิกรับงานนี้ใช่หรือไม่? ออเดอร์จะถูกปลดล็อคให้ผู้อื่นทำต่อ")) return;
   try {
-    await fetch(`http://${window.location.hostname}:3000/api/logistic/unlock/${orderId}`, { method: "POST" });
+   await fetch(`/api/logistic/unlock/${orderId}`, { method: "POST" });
     document.getElementById("logisticModal")?.remove();
     fetchLogisticOrders();
   } catch (err) {
@@ -216,9 +216,6 @@ function openLogisticModal(order) {
           ยกเลิกรับงาน (ปลดล็อค)
         </button>
         <div style="display: flex; gap: 10px;">
-          <button onclick="document.getElementById('logisticModal').remove(); fetchLogisticOrders();" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px;">
-            ยกเลิก
-          </button>
           <button onclick="submitLogisticOrder(event, ${order.id})" style="background: #059669; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; box-shadow: 0 2px 4px rgba(5,150,105,0.2);">
             บันทึกผลการจัดส่ง
           </button>
@@ -239,7 +236,7 @@ function triggerAutoSave(orderId) {
     const workComment = document.getElementById("workCommentInput")?.value || "";
 
     try {
-      await fetch(`http://${window.location.hostname}:3000/api/logistic/autosave`, {
+      await fetch("/api/logistic/autosave", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -374,7 +371,7 @@ async function submitLogisticOrder(event, orderId) {
   }
 
   try {
-    const response = await fetch(`http://${window.location.hostname}:3000/api/logistic/submit`, {
+    const response = await fetch("/api/logistic/submit", {
       method: "POST",
       body: formData
     });

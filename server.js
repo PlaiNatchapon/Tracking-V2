@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const { Pool } = require("pg");
 const cors = require("cors");
@@ -45,13 +46,17 @@ app.use(cors());
 // อนุญาตให้เซิร์ฟเวอร์อ่านไฟล์หน้าบ้าน (HTML, CSS, JS) ในโปรเจกต์
 app.use(express.static(path.join(__dirname)));
 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const databaseUrl = process.env.DATABASE_URL;
 
 const pool = new Pool({
-  user: "postgres",
-  host: "localhost",
-  database: "construction_store_db",
-  password: "0934570709",
-  port: 5432,
+  connectionString: databaseUrl,
+  ssl:
+    databaseUrl &&
+    !databaseUrl.includes("localhost") &&
+    !databaseUrl.includes("127.0.0.1")
+      ? { rejectUnauthorized: false }
+      : undefined,
 });
 
 const adminRoutes = require("./backend/Bsystem")(pool, io);
@@ -78,7 +83,6 @@ app.use("/api/checker", checkerRoutes);
 const logisticRoutes = require("./backend/Blogistic")(pool, io);
 app.use("/api/logistic", logisticRoutes);
 
-
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "login.html"));
 });
@@ -89,8 +93,12 @@ app.use("/api/accounting", accountingRoutes);
 const userRoutes = require("./backend/Busers")(pool);
 app.use("/api/users", userRoutes); //  ผูกเข้ากับ Endpoint /api/users เพื่อให้สอดคล้องกับฝั่งหน้าบ้าน
 
+const reportRoutes = require('./backend/reportRoutes');
+app.use('/api/admin', reportRoutes(pool))
 
 // ⬅️ 6. เปลี่ยนจาก app.listen มาเป็น server.listen แทน
-server.listen(3000, () => {
-  console.log("Server is running on http://localhost:3000");
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server is running on port ${PORT}`);
 });
