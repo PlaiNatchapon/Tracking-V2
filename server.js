@@ -46,7 +46,7 @@ app.use(cors());
 // อนุญาตให้เซิร์ฟเวอร์อ่านไฟล์หน้าบ้าน (HTML, CSS, JS) ในโปรเจกต์
 app.use(express.static(path.join(__dirname)));
 
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const databaseUrl = process.env.DATABASE_URL;
 
 const pool = new Pool({
