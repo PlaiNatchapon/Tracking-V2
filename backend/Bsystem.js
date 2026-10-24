@@ -1,4 +1,4 @@
-javascript
+
 const express = require('express');
 
 module.exports = function (pool, io) {
