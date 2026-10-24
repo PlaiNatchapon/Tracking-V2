@@ -1,4 +1,3 @@
-javascript
 const express = require('express');
 
 module.exports = function (pool, io) {
@@ -42,10 +41,6 @@ module.exports = function (pool, io) {
                         WHEN o.accounting_status = 'approved'
                         THEN 'งานเสร็จสิ้น'
 
-                        -- ฝ่ายขายแนบสลิปแล้ว รอฝ่ายบัญชีตรวจสอบ
-                        WHEN NULLIF(TRIM(o.payment_slip), '') IS NOT NULL
-                        THEN 'รอบัญชีตรวจสอบ'
-
                         -- รับสินค้าเองที่ร้าน และมีหลักฐานจาก Warehouse
                         WHEN (
                             o.vehicle_selection = 'pickup-self'
@@ -88,10 +83,6 @@ module.exports = function (pool, io) {
                         WHEN o.accounting_status = 'approved'
                         THEN 'badge-success'
 
-                        -- สีสถานะรอบัญชีตรวจสอบ
-                        WHEN NULLIF(TRIM(o.payment_slip), '') IS NOT NULL
-                        THEN 'badge-warning'
-
                         WHEN (
                             (
                                 o.vehicle_selection = 'pickup-self'
@@ -129,10 +120,6 @@ module.exports = function (pool, io) {
                     CASE
                         WHEN o.accounting_status = 'approved'
                         THEN 'check-circle-2'
-
-                        -- ไอคอนสถานะรอบัญชีตรวจสอบ
-                        WHEN NULLIF(TRIM(o.payment_slip), '') IS NOT NULL
-                        THEN 'clock'
 
                         WHEN (
                             (
