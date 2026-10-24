@@ -1,3 +1,4 @@
+
 const express = require('express');
 
 module.exports = function (pool, io) {
@@ -31,78 +32,61 @@ module.exports = function (pool, io) {
                     ) AS "department",
 
                     COALESCE(
+                        dc.vehicle_selection,
                         oc.vehicle_selection,
                         o.vehicle_selection,
                         'ไม่ระบุ'
                     ) AS "vehicle",
 
+                    -- =====================================================
+                    -- สถานะออเดอร์
+                    -- อนุมัติบัญชีแล้ว > มีสลิปรอตรวจ > สถานะงานเดิม
+                    -- =====================================================
                     CASE
-                        -- งานเสร็จสิ้นจริง ต้องผ่านการอนุมัติจากบัญชีเท่านั้น
                         WHEN o.accounting_status = 'approved'
                         THEN 'งานเสร็จสิ้น'
 
-                        -- รับสินค้าเองที่ร้าน และมีหลักฐานจาก Warehouse
-                        WHEN (
-                            o.vehicle_selection = 'pickup-self'
-                            OR oc.vehicle_selection = 'pickup-self'
-                        )
-                        AND o.payment_slip IS NOT NULL
-                        THEN 'รอฝ่ายบัญชีตรวจหลักฐานชำระเงิน'
-
-                        -- Logistic ส่งของแล้ว และมีหลักฐานชำระเงิน
-                        WHEN dc.id IS NOT NULL
-                        AND COALESCE(
+                        WHEN COALESCE(
                             o.payment_slip,
-                            dc.payment_slip
+                            dc.payment_slip,
+                            oc.payment_slip
                         ) IS NOT NULL
-                        THEN 'ส่งของแล้ว / รอฝ่ายบัญชีตรวจหลักฐานชำระเงิน'
+                        AND COALESCE(
+                            o.accounting_status,
+                            'pending'
+                        ) <> 'approved'
+                        THEN 'รอบัญชีตรวจสอบ'
 
-                        -- Logistic ส่งของแล้ว แต่ยังไม่มีหลักฐานชำระเงิน
                         WHEN dc.id IS NOT NULL
                         THEN 'ส่งของแล้ว'
 
-                        -- รับสินค้าเอง แต่ยังไม่มีหลักฐานชำระเงิน
                         WHEN (
                             o.vehicle_selection = 'pickup-self'
                             OR oc.vehicle_selection = 'pickup-self'
                         )
                         THEN 'รับสินค้าเอง / รอหลักฐานชำระเงิน'
 
-                        -- Checker ตรวจรถแล้ว
                         WHEN oc.id IS NOT NULL
                         THEN 'ตรวจรถแล้ว'
 
-                        -- Warehouse เริ่มดำเนินการแล้ว
                         WHEN of_fill.id IS NOT NULL
                         THEN 'กำลังแพ็คสินค้า'
 
                         ELSE 'รอดำเนินการ'
                     END AS "statusText",
 
+                    -- =====================================================
+                    -- สีป้ายสถานะ
+                    -- =====================================================
                     CASE
                         WHEN o.accounting_status = 'approved'
                         THEN 'badge-success'
 
-                        WHEN (
-                            (
-                                o.vehicle_selection = 'pickup-self'
-                                OR oc.vehicle_selection = 'pickup-self'
-                            )
-                            AND o.payment_slip IS NOT NULL
-                        )
-                        THEN 'badge-warning'
-
-                        WHEN dc.id IS NOT NULL
-                        AND COALESCE(
+                        WHEN COALESCE(
                             o.payment_slip,
-                            dc.payment_slip
+                            dc.payment_slip,
+                            oc.payment_slip
                         ) IS NOT NULL
-                        THEN 'badge-warning'
-
-                        WHEN (
-                            o.vehicle_selection = 'pickup-self'
-                            OR oc.vehicle_selection = 'pickup-self'
-                        )
                         THEN 'badge-warning'
 
                         WHEN dc.id IS NOT NULL
@@ -117,30 +101,18 @@ module.exports = function (pool, io) {
                         ELSE 'badge-secondary'
                     END AS "badgeClass",
 
+                    -- =====================================================
+                    -- ไอคอนสถานะ
+                    -- =====================================================
                     CASE
                         WHEN o.accounting_status = 'approved'
                         THEN 'check-circle-2'
 
-                        WHEN (
-                            (
-                                o.vehicle_selection = 'pickup-self'
-                                OR oc.vehicle_selection = 'pickup-self'
-                            )
-                            AND o.payment_slip IS NOT NULL
-                        )
-                        THEN 'clock'
-
-                        WHEN dc.id IS NOT NULL
-                        AND COALESCE(
+                        WHEN COALESCE(
                             o.payment_slip,
-                            dc.payment_slip
+                            dc.payment_slip,
+                            oc.payment_slip
                         ) IS NOT NULL
-                        THEN 'clock'
-
-                        WHEN (
-                            o.vehicle_selection = 'pickup-self'
-                            OR oc.vehicle_selection = 'pickup-self'
-                        )
                         THEN 'clock'
 
                         WHEN dc.id IS NOT NULL
@@ -198,7 +170,6 @@ module.exports = function (pool, io) {
         }
     });
 
-
     // =========================================================================
     // 2. ดึงข้อมูล Timeline ของออเดอร์
     // =========================================================================
@@ -236,7 +207,6 @@ module.exports = function (pool, io) {
             });
         }
     });
-
 
     // =========================================================================
     // 3. เพิ่มออเดอร์ใหม่
